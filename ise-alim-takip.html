@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>İşe Alım Operasyon Takip</title>
+<style>
+  :root{
+    --bg:#f4f5f7; --card:#ffffff; --border:#e1e3e8; --border-strong:#c9ccd3;
+    --text:#1c1f26; --text-secondary:#5b6070; --text-muted:#8a8f9c;
+    --accent:#2f5fe0; --accent-bg:#eaf0ff;
+    --danger:#c0392b; --danger-bg:#fbeaea;
+    --warn:#9a6b00; --warn-bg:#fff4de;
+    --ok:#1a7f4b; --ok-bg:#e7f7ee;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:-apple-system,"Segoe UI",Arial,sans-serif;
+    background:var(--bg); color:var(--text); padding:24px;
+  }
+  h1{font-size:20px; font-weight:600; margin:0 0 4px;}
+  .subtitle{color:var(--text-secondary); font-size:13px; margin:0 0 20px;}
+  .status-banner{
+    display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-muted);
+    margin-bottom:16px;
+  }
+  .dot{width:8px;height:8px;border-radius:50%;background:#ccc;}
+  .dot.live{background:var(--ok);}
+  .dot.saving{background:var(--warn);}
+  .toolbar{
+    display:flex; flex-wrap:wrap; gap:10px; margin-bottom:18px; align-items:center;
+  }
+  select, input[type=text], input[type=date], textarea{
+    font-family:inherit; font-size:13px; padding:8px 10px;
+    border:1px solid var(--border-strong); border-radius:8px; background:#fff; color:var(--text);
+  }
+  button{
+    font-family:inherit; font-size:13px; padding:9px 14px; border-radius:8px;
+    border:1px solid var(--border-strong); background:#fff; color:var(--text); cursor:pointer;
+  }
+  button:hover{background:#f0f1f4;}
+  button.primary{background:var(--accent); color:#fff; border-color:var(--accent);}
+  button.primary:hover{background:#274ec2;}
+  button.danger-btn{color:var(--danger); border-color:#eacaca;}
+  .spacer{flex:1;}
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:14px;
+    padding:20px; margin-bottom:18px;
+  }
+  .form-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:12px;
+  }
+  .form-grid .full{grid-column:1/-1;}
+  label{font-size:12px; color:var(--text-secondary); display:block; margin-bottom:4px;}
+  textarea{width:100%; min-height:60px; resize:vertical;}
+  select, input[type=text], input[type=date]{width:100%;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th{
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.03em;
+    color:var(--text-muted); font-weight:600; padding:8px 10px; border-bottom:1px solid var(--border);
+  }
+  td{padding:10px; border-bottom:1px solid var(--border); vertical-align:top;}
+  tr:hover td{background:#fafbfc;}
+  .badge{
+    display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600;
+  }
+  .badge.bekliyor{background:var(--warn-bg); color:var(--warn);}
+  .badge.devam{background:var(--accent-bg); color:var(--accent);}
+  .badge.tamam{background:var(--ok-bg); color:var(--ok);}
+  .badge.iptal{background:var(--danger-bg); color:var(--danger);}
+  .desc-cell{max-width:220px; white-space:pre-wrap; color:var(--text-secondary);}
+  .row-actions{display:flex; gap:6px;}
+  .row-actions button{padding:5px 9px; font-size:12px;}
+  .empty{text-align:center; padding:40px 0; color:var(--text-muted); font-size:13px;}
+  .stats{display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap;}
+  .stat{background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px 16px; min-width:110px;}
+  .stat .num{font-size:20px; font-weight:600;}
+  .stat .lbl{font-size:11px; color:var(--text-muted); margin-top:2px;}
+  select[data-status="Bekliyor"]{color:var(--warn);}
+  .hidden{display:none !important;}
+</style>
+</head>
+<body>
+
+<h1>İşe Alım Operasyon Takip</h1>
+<p class="subtitle">Talepler, atamalar ve durumlar — ortak, gerçek zamanlı liste.</p>
+<div class="status-banner"><span class="dot" id="statusDot"></span><span id="statusText">Yükleniyor…</span></div>
+
+<div class="stats" id="stats"></div>
+
+<div class="card">
+  <div class="form-grid">
+    <div>
+      <label>Talep Başlığı</label>
+      <input type="text" id="f-title" placeholder="Örn: 5 kişilik teknik ekip için ilan açılması">
+    </div>
+    <div>
+      <label>Kimden Geldi (İşe Alımcı)</label>
+      <input type="text" id="f-from" placeholder="Örn: Ayşe Yılmaz">
+    </div>
+    <div>
+      <label>Atanan Kişi</label>
+      <input type="text" id="f-assignee" placeholder="Ekipten kim ilgilenecek">
+    </div>
+    <div>
+      <label>Durum</label>
+      <select id="f-status">
+        <option>Bekliyor</option>
+        <option>Devam Ediyor</option>
+        <option>Tamamlandı</option>
+        <option>İptal</option>
+      </select>
+    </div>
+    <div>
+      <label>Talep Tarihi</label>
+      <input type="date" id="f-date">
+    </div>
+    <div>
+      <label>Termin / Bitiş Tarihi (opsiyonel)</label>
+      <input type="date" id="f-due">
+    </div>
+    <div class="full">
+      <label>Açıklama</label>
+      <textarea id="f-desc" placeholder="Talep detayları, notlar..."></textarea>
+    </div>
+  </div>
+  <div style="margin-top:14px; display:flex; gap:8px;">
+    <button class="primary" id="btnAdd">Görev Ekle</button>
+    <button id="btnClear">Formu Temizle</button>
+  </div>
+</div>
+
+<div class="toolbar">
+  <select id="filterStatus">
+    <option value="">Tüm Durumlar</option>
+    <option>Bekliyor</option>
+    <option>Devam Ediyor</option>
+    <option>Tamamlandı</option>
+    <option>İptal</option>
+  </select>
+  <select id="filterAssignee"><option value="">Tüm Kişiler</option></select>
+  <input type="text" id="searchBox" placeholder="Ara: başlık, açıklama, kimden geldi...">
+  <div class="spacer"></div>
+  <button id="btnRefresh">Yenile</button>
+</div>
+
+<div class="card" style="overflow-x:auto;">
+  <table id="taskTable">
+    <thead>
+      <tr>
+        <th>Talep</th>
+        <th>Kimden</th>
+        <th>Atanan</th>
+        <th>Tarihler</th>
+        <th>Açıklama</th>
+        <th>Durum</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="taskBody"></tbody>
+  </table>
+  <div class="empty hidden" id="emptyMsg">Henüz görev eklenmedi.</div>
+</div>
+
+<script>
+const STORAGE_KEY = 'recruitment-ops-tasks';
+let tasks = [];
+let editingId = null;
+
+function uid(){ return 'T' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function fmtDate(d){
+  if(!d) return '—';
+  const [y,m,day] = d.split('-');
+  return day+'.'+m+'.'+y;
+}
+function statusClass(s){
+  return {'Bekliyor':'bekliyor','Devam Ediyor':'devam','Tamamlandı':'tamam','İptal':'iptal'}[s] || 'bekliyor';
+}
+
+function setStatus(state, msg){
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+  dot.className = 'dot' + (state==='live' ? ' live' : state==='saving' ? ' saving' : '');
+  txt.textContent = msg;
+}
+
+async function loadTasks(){
+  setStatus('saving', 'Yükleniyor…');
+  try{
+    const result = await window.storage.get(STORAGE_KEY, true);
+    tasks = result && result.value ? JSON.parse(result.value) : [];
+  }catch(e){
+    tasks = [];
+  }
+  setStatus('live', 'Ortak listeye bağlı — herkes aynı veriyi görür.');
+  renderAll();
+}
+
+async function saveTasks(){
+  setStatus('saving', 'Kaydediliyor…');
+  try{
+    const result = await window.storage.set(STORAGE_KEY, JSON.stringify(tasks), true);
+    if(!result) throw new Error('save failed');
+    setStatus('live', 'Kaydedildi — herkes güncel hali görecek.');
+  }catch(e){
+    setStatus('', 'Kaydetme hatası, tekrar deneyin.');
+  }
+}
+
+function collectForm(){
+  return {
+    title: document.getElementById('f-title').value.trim(),
+    from: document.getElementById('f-from').value.trim(),
+    assignee: document.getElementById('f-assignee').value.trim(),
+    status: document.getElementById('f-status').value,
+    date: document.getElementById('f-date').value || todayStr(),
+    due: document.getElementById('f-due').value,
+    desc: document.getElementById('f-desc').value.trim()
+  };
+}
+
+function clearForm(){
+  document.getElementById('f-title').value='';
+  document.getElementById('f-from').value='';
+  document.getElementById('f-assignee').value='';
+  document.getElementById('f-status').value='Bekliyor';
+  document.getElementById('f-date').value=todayStr();
+  document.getElementById('f-due').value='';
+  document.getElementById('f-desc').value='';
+  editingId = null;
+  document.getElementById('btnAdd').textContent = 'Görev Ekle';
+}
+
+async function addOrUpdateTask(){
+  const data = collectForm();
+  if(!data.title){
+    alert('Lütfen talep başlığı girin.');
+    return;
+  }
+  if(editingId){
+    const idx = tasks.findIndex(t=>t.id===editingId);
+    if(idx>-1) tasks[idx] = {...tasks[idx], ...data};
+  }else{
+    tasks.unshift({id:uid(), createdAt:new Date().toISOString(), ...data});
+  }
+  await saveTasks();
+  clearForm();
+  renderAll();
+}
+
+function editTask(id){
+  const t = tasks.find(x=>x.id===id);
+  if(!t) return;
+  document.getElementById('f-title').value=t.title;
+  document.getElementById('f-from').value=t.from;
+  document.getElementById('f-assignee').value=t.assignee;
+  document.getElementById('f-status').value=t.status;
+  document.getElementById('f-date').value=t.date;
+  document.getElementById('f-due').value=t.due || '';
+  document.getElementById('f-desc').value=t.desc;
+  editingId = id;
+  document.getElementById('btnAdd').textContent = 'Değişikliği Kaydet';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function deleteTask(id){
+  if(!confirm('Bu görevi silmek istediğinize emin misiniz?')) return;
+  tasks = tasks.filter(t=>t.id!==id);
+  await saveTasks();
+  renderAll();
+}
+
+async function quickStatus(id, newStatus){
+  const t = tasks.find(x=>x.id===id);
+  if(!t) return;
+  t.status = newStatus;
+  await saveTasks();
+  renderAll();
+}
+
+function renderStats(){
+  const counts = {Bekliyor:0,'Devam Ediyor':0,'Tamamlandı':0,'İptal':0};
+  tasks.forEach(t=>{ if(counts[t.status]!==undefined) counts[t.status]++; });
+  const el = document.getElementById('stats');
+  el.innerHTML = `
+    <div class="stat"><div class="num">${tasks.length}</div><div class="lbl">Toplam</div></div>
+    <div class="stat"><div class="num">${counts['Bekliyor']}</div><div class="lbl">Bekliyor</div></div>
+    <div class="stat"><div class="num">${counts['Devam Ediyor']}</div><div class="lbl">Devam Ediyor</div></div>
+    <div class="stat"><div class="num">${counts['Tamamlandı']}</div><div class="lbl">Tamamlandı</div></div>
+  `;
+}
+
+function renderAssigneeFilter(){
+  const sel = document.getElementById('filterAssignee');
+  const current = sel.value;
+  const names = [...new Set(tasks.map(t=>t.assignee).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Tüm Kişiler</option>' + names.map(n=>`<option>${escapeHtml(n)}</option>`).join('');
+  sel.value = current;
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderTable(){
+  const statusFilter = document.getElementById('filterStatus').value;
+  const assigneeFilter = document.getElementById('filterAssignee').value;
+  const search = document.getElementById('searchBox').value.toLowerCase();
+
+  let list = tasks.filter(t=>{
+    if(statusFilter && t.status!==statusFilter) return false;
+    if(assigneeFilter && t.assignee!==assigneeFilter) return false;
+    if(search){
+      const hay = (t.title+' '+t.desc+' '+t.from+' '+t.assignee).toLowerCase();
+      if(!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  const body = document.getElementById('taskBody');
+  const empty = document.getElementById('emptyMsg');
+  body.innerHTML = '';
+
+  if(list.length===0){
+    empty.classList.remove('hidden');
+  }else{
+    empty.classList.add('hidden');
+  }
+
+  list.forEach(t=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${escapeHtml(t.title)}</strong></td>
+      <td>${escapeHtml(t.from) || '—'}</td>
+      <td>${escapeHtml(t.assignee) || '—'}</td>
+      <td>${fmtDate(t.date)}${t.due ? ' → '+fmtDate(t.due) : ''}</td>
+      <td class="desc-cell">${escapeHtml(t.desc) || '—'}</td>
+      <td>
+        <select data-id="${t.id}" class="status-select">
+          ${['Bekliyor','Devam Ediyor','Tamamlandı','İptal'].map(s=>`<option ${s===t.status?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <div class="row-actions">
+          <button data-edit="${t.id}">Düzenle</button>
+          <button data-del="${t.id}" class="danger-btn">Sil</button>
+        </div>
+      </td>
+    `;
+    body.appendChild(tr);
+  });
+
+  body.querySelectorAll('.status-select').forEach(sel=>{
+    sel.addEventListener('change', e=>quickStatus(e.target.dataset.id, e.target.value));
+  });
+  body.querySelectorAll('[data-edit]').forEach(b=>{
+    b.addEventListener('click', ()=>editTask(b.dataset.edit));
+  });
+  body.querySelectorAll('[data-del]').forEach(b=>{
+    b.addEventListener('click', ()=>deleteTask(b.dataset.del));
+  });
+}
+
+function renderAll(){
+  renderStats();
+  renderAssigneeFilter();
+  renderTable();
+}
+
+document.getElementById('btnAdd').addEventListener('click', addOrUpdateTask);
+document.getElementById('btnClear').addEventListener('click', clearForm);
+document.getElementById('btnRefresh').addEventListener('click', loadTasks);
+document.getElementById('filterStatus').addEventListener('change', renderTable);
+document.getElementById('filterAssignee').addEventListener('change', renderTable);
+document.getElementById('searchBox').addEventListener('input', renderTable);
+
+clearForm();
+loadTasks();
+</script>
+</body>
+</html>
