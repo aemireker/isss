@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Toplu Meeting Planlama</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+  <style>
+    :root{
+      --navy:#072146;
+      --blue:#004481;
+      --medium:#1464A5;
+      --cyan:#49A5E6;
+      --aqua:#2DCCCD;
+      --bg:#F4F7FA;
+      --card:#FFFFFF;
+      --text:#17324D;
+      --muted:#6B7F93;
+      --border:#DCE5ED;
+      --success:#0A7B55;
+      --warning:#A76800;
+      --danger:#C62828;
+      --shadow:0 14px 36px rgba(7,33,70,.12);
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Segoe UI",Arial,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(45,204,205,.10), transparent 30%),
+        linear-gradient(180deg,#EEF4F8 0%,var(--bg) 100%);
+    }
+
+    .topbar{
+      background:linear-gradient(120deg,var(--navy),var(--blue) 58%,var(--medium));
+      color:#fff;
+      padding:22px 30px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:16px;
+      box-shadow:var(--shadow);
+    }
+    .topbar h1{margin:0;font-size:25px}
+    .topbar p{margin:6px 0 0;opacity:.84;font-size:13px}
+    .top-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+    button{
+      border:0;
+      border-radius:10px;
+      padding:10px 15px;
+      font-weight:700;
+      cursor:pointer;
+      transition:.18s ease;
+      font-size:14px;
+    }
+    button:hover{transform:translateY(-1px)}
+    button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+    .primary{background:var(--aqua);color:var(--navy)}
+    .secondary{background:#fff;color:var(--blue)}
+    .outline{background:#fff;color:var(--blue);border:1px solid var(--blue)}
+    .danger{background:#FDECEC;color:var(--danger)}
+    .small{padding:7px 11px;font-size:12px}
+
+    input,select,textarea{
+      width:100%;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 11px;
+      font:inherit;
+      color:var(--text);
+      background:#fff;
+    }
+
+    .container{max-width:1600px;margin:0 auto;padding:26px}
+
+    .upload-area{
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:18px;
+      box-shadow:var(--shadow);
+      display:grid;
+      grid-template-columns:1.5fr 1fr 220px;
+      gap:12px;
+      align-items:stretch;
+      margin-bottom:18px;
+    }
+    .drop{
+      border:2px dashed var(--cyan);
+      border-radius:12px;
+      padding:18px;
+      text-align:center;
+      background:#F7FCFF;
+    }
+    .drop input{display:none}
+    .drop label{font-weight:800;color:var(--blue);cursor:pointer;display:block}
+    .drop small{display:block;margin-top:5px;color:var(--muted)}
+
+    .metrics{
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      gap:12px;
+      margin-bottom:18px;
+    }
+    .metric{
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:15px;
+      box-shadow:0 8px 22px rgba(7,33,70,.07);
+    }
+    .metric span{display:block;color:var(--muted);font-size:12px}
+    .metric strong{display:block;margin-top:5px;font-size:25px;color:var(--navy)}
+
+    .batch-bar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:14px 16px;
+      margin-bottom:18px;
+      box-shadow:0 8px 22px rgba(7,33,70,.07);
+    }
+    .batch-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .progress-wrap{min-width:280px}
+    .progress{
+      height:10px;
+      background:#E9EFF4;
+      border-radius:999px;
+      overflow:hidden;
+    }
+    .progress span{
+      display:block;height:100%;width:0;
+      background:linear-gradient(90deg,var(--cyan),var(--aqua));
+      transition:.2s;
+    }
+    .progress-text{font-size:12px;color:var(--muted);margin-top:5px}
+
+    .panel{
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:16px;
+      overflow:hidden;
+      box-shadow:var(--shadow);
+    }
+    .panel-head{
+      padding:15px 17px;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+    }
+    .panel-head h2{margin:0;font-size:18px}
+    .table-wrap{overflow-y:auto;overflow-x:hidden;max-height:64vh}
+    table{width:100%;border-collapse:collapse;table-layout:fixed}
+    th,td{
+      padding:9px 7px;
+      border-bottom:1px solid #EDF2F6;
+      text-align:left;
+      font-size:11px;
+      overflow-wrap:anywhere;
+      vertical-align:middle;
+    }
+    th{
+      background:#F8FAFC;
+      color:var(--blue);
+      position:sticky;
+      top:0;
+      z-index:2;
+    }
+    th:nth-child(1){width:3%}
+    th:nth-child(2){width:3.5%}
+    th:nth-child(3){width:12%}
+    th:nth-child(4){width:14%}
+    th:nth-child(5){width:9%}
+    th:nth-child(6){width:8%}
+    th:nth-child(7){width:8%}
+    th:nth-child(8){width:8%}
+    th:nth-child(9){width:7%}
+    th:nth-child(10){width:8%}
+    th:nth-child(11){width:6%}
+    th:nth-child(12){width:8%}
+    th:nth-child(13){width:6.5%}
+    td button.small{padding:5px 7px;font-size:10px}
+    tr:hover td{background:#FBFDFE}
+    .badge{
+      display:inline-block;
+      padding:5px 8px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:800;
+    }
+    .new{background:#EDF3F8;color:var(--blue)}
+    .ready{background:#E8F7F2;color:var(--success)}
+    .draft{background:#EEF0FF;color:#4B55A5}
+    .error{background:#FDECEC;color:var(--danger)}
+    .opened{background:#FFF4DA;color:var(--warning)}
+    .empty{padding:60px;text-align:center;color:var(--muted)}
+
+    .drawer-backdrop{
+      position:fixed;inset:0;background:rgba(7,33,70,.48);
+      opacity:0;pointer-events:none;transition:.2s;z-index:30;
+    }
+    .drawer-backdrop.open{opacity:1;pointer-events:auto}
+    .drawer{
+      position:fixed;right:0;top:0;height:100vh;width:min(760px,96vw);
+      background:#fff;z-index:31;transform:translateX(100%);
+      transition:.25s ease;box-shadow:-20px 0 50px rgba(7,33,70,.24);
+      display:flex;flex-direction:column;
+    }
+    .drawer.open{transform:translateX(0)}
+    .drawer-head{
+      padding:20px 22px;
+      background:linear-gradient(120deg,var(--navy),var(--blue));
+      color:#fff;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+    .drawer-head h3{margin:0}
+    .drawer-body{padding:22px;overflow:auto}
+    .section{
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:16px;
+      margin-bottom:16px;
+    }
+    .section h4{margin:0 0 14px;color:var(--blue)}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px}
+    .note{
+      background:#FFF8E6;border:1px solid #EED58A;color:#6C560B;
+      border-radius:10px;padding:12px;font-size:13px;line-height:1.5;
+    }
+    .drawer-actions{
+      margin-top:auto;
+      padding:15px 22px;
+      border-top:1px solid var(--border);
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      background:#fff;
+    }
+    .toast{
+      position:fixed;right:22px;bottom:22px;z-index:60;
+      background:var(--navy);color:#fff;padding:13px 16px;border-radius:10px;
+      box-shadow:var(--shadow);display:none;max-width:420px;
+    }
+    .toast.show{display:block}
+
+    @media(max-width:1000px){
+      .upload-area{grid-template-columns:1fr}
+      .metrics{grid-template-columns:repeat(2,1fr)}
+      .batch-bar{flex-direction:column;align-items:stretch}
+      .grid-2{grid-template-columns:1fr}
+      .topbar{flex-direction:column;align-items:flex-start}
+    }
+  </style>
+</head>
+<body>
+<header class="topbar">
+  <div>
+    <h1>Toplu Meeting Planlama</h1>
+    <p>Excel yükle, satırları doğrula, temiz meeting taslağı oluştur ve seçilen ICS dosyalarını ZIP indir</p>
+  </div>
+  <div class="top-actions">
+    <button class="secondary" onclick="downloadTemplate()">Excel Şablonunu İndir</button>
+    <button class="primary" onclick="clearAll()">Listeyi Temizle</button>
+  </div>
+</header>
+
+<main class="container">
+  <section class="upload-area">
+    <div class="drop">
+      <input id="fileInput" type="file" accept=".xlsx,.xls,.csv">
+      <label for="fileInput">Excel / CSV Dosyasını Yükle</label>
+      <small>En fazla 25 aday. Ekli şablondaki kolonlar desteklenir; birden fazla opsiyonel katılımcıyı noktalı virgülle ayırın.</small>
+    </div>
+    <input id="searchInput" placeholder="Aday, e-posta, telefon, bölge, ilan veya ikamet ara...">
+    <select id="statusFilter">
+      <option value="">Tüm Durumlar</option>
+      <option value="Hazır">Hazır</option>
+      <option value="Taslak Açıldı">Taslak Açıldı</option>
+      <option value="Hata">Hata</option>
+    </select>
+  </section>
+
+  <section class="metrics">
+    <div class="metric"><span>Toplam Kayıt</span><strong id="mTotal">0</strong></div>
+    <div class="metric"><span>Hazır</span><strong id="mReady">0</strong></div>
+    <div class="metric"><span>Hatalı</span><strong id="mError">0</strong></div>
+    <div class="metric"><span>Taslak Açıldı</span><strong id="mOpened">0</strong></div>
+    <div class="metric"><span>Kalan</span><strong id="mRemaining">0</strong></div>
+  </section>
+
+  <section class="batch-bar">
+    <div class="batch-actions">
+      <button class="outline" onclick="selectReady()">Hazır Olanları Seç</button>
+      <button class="outline" onclick="downloadSelectedIcs()">Seçilen ICS'leri Tek Tek İndir</button>
+      <button class="outline" onclick="downloadSelectedZip()">Seçilen ICS'leri ZIP İndir</button>
+      <button class="primary" onclick="openNextSelected()">Sonraki Seçileni Outlook'ta Aç</button>
+      <button class="danger" onclick="resetSelection()">Seçimleri Sil</button>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress"><span id="progressBar"></span></div>
+      <div id="progressText" class="progress-text">0 / 0 meeting taslağı açıldı</div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Aday Meeting Listesi</h2>
+      <span id="resultCount">0 kayıt</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th><input id="selectAll" type="checkbox" onchange="toggleSelectAll(this.checked)"></th>
+            <th>#</th>
+            <th>Ad Soyad</th>
+            <th>E-Posta</th>
+            <th>Telefon No</th>
+            <th>Aday No</th>
+            <th>İkamet</th>
+            <th>Bölge</th>
+            <th>İlan</th>
+            <th>Tarih</th>
+            <th>Saat</th>
+            <th>Toplantı Türü</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div id="empty" class="empty">Henüz liste yüklenmedi.</div>
+    </div>
+  </section>
+</main>
+
+<div id="backdrop" class="drawer-backdrop" onclick="closeDrawer()"></div>
+<aside id="drawer" class="drawer">
+  <div class="drawer-head">
+    <h3>Meeting Taslağı</h3>
+    <button class="secondary small" onclick="closeDrawer()">Kapat</button>
+  </div>
+
+  <div class="drawer-body">
+    <div class="section">
+      <h4>Aday Bilgileri</h4>
+      <div class="grid-2">
+        <div class="field"><label>Ad Soyad</label><input id="dName"></div>
+        <div class="field"><label>E-Posta</label><input id="dEmail" type="email"></div>
+        <div class="field"><label>Telefon No</label><input id="dPhone"></div>
+        <div class="field"><label>Aday No</label><input id="dCandidateNo"></div>
+        <div class="field"><label>İkamet</label><input id="dCity"></div>
+        <div class="field"><label>Bölge</label><input id="dRegion"></div>
+        <div class="field"><label>İlan</label><input id="dJobNo"></div>
+        <div class="field"><label>Pozisyon</label><input id="dPosition"></div>
+        <div class="field"><label>Tarih</label><input id="dDate" type="date"></div>
+        <div class="field"><label>Saat</label><input id="dTime" type="time"></div>
+        <div class="field"><label>Toplantı Türü</label><input id="dMeetingType"></div>
+      </div>
+      <div style="margin-top:12px;display:flex;justify-content:flex-end">
+        <button class="outline small" onclick="saveCandidateEdits()">Aday Bilgilerini Kaydet</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h4>Meeting Bilgileri</h4>
+      <div class="field"><label>Başlık</label><input id="dSubject"></div>
+      <div class="grid-2" style="margin-top:12px">
+        <div class="field"><label>Başlangıç</label><input id="dStart" type="datetime-local"></div>
+        <div class="field"><label>Bitiş</label><input id="dEnd" type="datetime-local"></div>
+      </div>
+      <div class="field" style="margin-top:12px"><label>Opsiyonel Katılımcılar (Excel'den gelir)</label><input id="dOptional" placeholder="mail1@firma.com; mail2@firma.com"></div>
+      <div class="field" style="margin-top:12px"><label>Konum</label><input id="dLocation" value="Microsoft Teams Meeting"></div>
+      <div class="field" style="margin-top:12px"><label>Açıklama</label><textarea id="dBody" rows="9"></textarea></div>
+    </div>
+  </div>
+
+  <div class="drawer-actions">
+    <button class="outline" onclick="downloadCurrentIcs()">Sadece ICS İndir</button>
+  </div>
+</aside>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  const MAX_ROWS = 50;
+  const STORAGE_KEY = "bbva_bulk_meeting_50";
+  const DEFAULT_POSITION = "Ödeme Sistemleri Saha Satış Asistanı";
+  // Opsiyonel katılımcılar Excel'deki "Opsiyonel Katılımcılar" kolonundan alınır.
+
+  let candidates = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  let selectedIndex = null;
+  let selectedIds = new Set();
+
+  const aliases = {
+    name:["Aday Soyad","Ad Soyad","AD SOYAD","Aday","İsim","Isim","Name"],
+    email:["E-Posta","Eposta","Email","Mail"],
+    candidateNo:["Aday no","Aday No","ADAY NO","AdayNo","Candidate No"],
+    city:["İkamet","Ikamet","Şehir","Sehir","City"],
+    jobNo:["İlan","Ilan","İlan No","Ilan No","Job No"],
+    date:["Görüşme Tarihi","Gorusme Tarihi","Tarih","Meeting Tarihi","Mülakat Tarihi","Mulakat Tarihi","Date"],
+    time:["Saat","Başlangıç Saati","Baslangic Saati","Time"],
+    position:["Pozisyon","Position","Rol"],
+    optional:["Opsiyonel Katılımcılar","Opsiyonel Katilimcilar","Optional Attendees","Optional","CC"],
+    phone:["Telefon no","Telefon No","Telefon","Phone"],
+    region:["Bölge","Bolge","Region"],
+    meetingType:["Toplantı Türü","Toplanti Turu","Meeting Type"]
+  };
+
+  function pick(row, keys){
+    for(const key of keys){
+      if(row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== "") return row[key];
+    }
+    return "";
+  }
+
+  function normalizeDate(value){
+    if(!value) return "";
+    if(typeof value === "number"){
+      const d = XLSX.SSF.parse_date_code(value);
+      if(d) return `${d.y}-${String(d.m).padStart(2,"0")}-${String(d.d).padStart(2,"0")}`;
+    }
+    const s = String(value).trim();
+    const tr = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+    if(tr) return `${tr[3]}-${tr[2].padStart(2,"0")}-${tr[1].padStart(2,"0")}`;
+    const d = new Date(s);
+    return isNaN(d) ? "" : d.toISOString().slice(0,10);
+  }
+
+  function normalizeTime(value){
+    if(value === undefined || value === null || value === "") return "";
+    if(typeof value === "number"){
+      const mins = Math.round(value * 24 * 60);
+      return `${String(Math.floor(mins/60)%24).padStart(2,"0")}:${String(mins%60).padStart(2,"0")}`;
+    }
+    const m = String(value).match(/(\d{1,2}):(\d{2})/);
+    return m ? `${m[1].padStart(2,"0")}:${m[2]}` : "";
+  }
+
+  function addMinutes(dateTimeLocal, mins){
+    const d = new Date(dateTimeLocal);
+    d.setMinutes(d.getMinutes()+mins);
+    const local = new Date(d.getTime()-d.getTimezoneOffset()*60000);
+    return local.toISOString().slice(0,16);
+  }
+
+  function validateCandidate(c){
+    const errors = [];
+    if(!c.name) errors.push("Ad Soyad eksik");
+    if(!c.email) errors.push("E-posta eksik");
+    else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)) errors.push("E-posta geçersiz");
+    if(!c.date) errors.push("Tarih eksik/geçersiz");
+    if(!c.time) errors.push("Saat eksik/geçersiz");
+    return errors;
+  }
+
+  document.getElementById("fileInput").addEventListener("change", async e=>{
+    const file = e.target.files[0];
+    if(!file) return;
+
+    const buffer = await file.arrayBuffer();
+    const wb = XLSX.read(buffer,{type:"array"});
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const raw = XLSX.utils.sheet_to_json(sheet,{defval:""}).slice(0,MAX_ROWS);
+
+    candidates = raw.map((row,i)=>{
+      const c = {
+        id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${i}`,
+        name:String(pick(row,aliases.name)).trim(),
+        email:String(pick(row,aliases.email)).trim(),
+        phone:String(pick(row,aliases.phone)).trim(),
+        candidateNo:String(pick(row,aliases.candidateNo)).trim(),
+        city:String(pick(row,aliases.city)).trim(),
+        region:String(pick(row,aliases.region)).trim(),
+        jobNo:String(pick(row,aliases.jobNo)).trim(),
+        date:normalizeDate(pick(row,aliases.date)),
+        time:normalizeTime(pick(row,aliases.time)),
+        position:String(pick(row,aliases.position) || DEFAULT_POSITION).trim(),
+        optional:String(pick(row,aliases.optional) || "").trim(),
+        meetingType:String(pick(row,aliases.meetingType) || "Online").trim(),
+        status:"Hazır",
+        opened:false,
+        ok:false
+      };
+      c.errors = validateCandidate(c);
+      c.status = c.errors.length ? "Hata" : "Hazır";
+      return c;
+    });
+
+    selectedIds.clear();
+    persist();
+    render();
+
+    if(raw.length === MAX_ROWS){
+      toast("İlk 50 kayıt yüklendi.");
+    }else{
+      toast(`${raw.length} kayıt yüklendi.`);
+    }
+  });
+
+  document.getElementById("searchInput").addEventListener("input",render);
+  document.getElementById("statusFilter").addEventListener("change",render);
+
+  function persist(){
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(candidates));
+  }
+
+  function render(){
+    const q = document.getElementById("searchInput").value.toLocaleLowerCase("tr");
+    const status = document.getElementById("statusFilter").value;
+
+    const list = candidates.map((c,i)=>({...c,_i:i})).filter(c=>{
+      const hit = [c.name,c.email,c.phone,c.candidateNo,c.city,c.region,c.jobNo,c.position,c.meetingType]
+        .join(" ").toLocaleLowerCase("tr").includes(q);
+      return hit && (!status || c.status===status);
+    });
+
+    document.getElementById("rows").innerHTML = list.map((c,idx)=>`
+      <tr>
+        <td><input type="checkbox" ${selectedIds.has(c.id) ? "checked" : ""} onchange="toggleRow('${c.id}',this.checked)" ${c.status==="Hata" ? "disabled" : ""}></td>
+        <td>${c._i+1}</td>
+        <td><b>${esc(c.name || "-")}</b></td>
+        <td>${esc(c.email || "-")}</td>
+        <td>${esc(c.phone || "-")}</td>
+        <td>${esc(c.candidateNo || "-")}</td>
+        <td>${esc(c.city || "-")}</td>
+        <td>${esc(c.region || "-")}</td>
+        <td>${esc(c.jobNo || "-")}</td>
+        <td>${formatDate(c.date)}</td>
+        <td>${esc(c.time || "-")}</td>
+        <td>${esc(c.meetingType || "-")}</td>
+        <td>
+          <button class="outline small" onclick="openCandidate(${c._i})">Aç</button>
+          <button class="primary small" onclick="quickSend(${c._i})" ${c.status==="Hata" ? "disabled" : ""}>Gönder</button>
+        </td>
+      </tr>
+    `).join("");
+
+    document.getElementById("empty").style.display = list.length ? "none" : "block";
+    document.getElementById("resultCount").textContent = `${list.length} kayıt`;
+
+    const ready = candidates.filter(x=>x.status==="Hazır").length;
+    const errors = candidates.filter(x=>x.status==="Hata").length;
+    const opened = candidates.filter(x=>x.status==="Taslak Açıldı").length;
+    const remaining = candidates.filter(x=>x.status!=="Hata" && x.status!=="Taslak Açıldı").length;
+
+    document.getElementById("mTotal").textContent = candidates.length;
+    document.getElementById("mReady").textContent = ready;
+    document.getElementById("mError").textContent = errors;
+    document.getElementById("mOpened").textContent = opened;
+    document.getElementById("mRemaining").textContent = remaining;
+
+    const validTotal = candidates.filter(x=>x.status!=="Hata").length;
+    const pct = validTotal ? Math.round((opened/validTotal)*100) : 0;
+    document.getElementById("progressBar").style.width = pct + "%";
+    document.getElementById("progressText").textContent = `${opened} / ${validTotal} meeting taslağı açıldı`;
+  }
+
+  function statusClass(status){
+    if(status==="Hazır") return "ready";
+    if(status==="Hata") return "error";
+    if(status==="Taslak Açıldı") return "opened";
+    return "new";
+  }
+
+  function toggleRow(id,checked){
+    if(checked) selectedIds.add(id); else selectedIds.delete(id);
+  }
+
+
+  function toggleSelectAll(checked){
+    const visible = candidates.filter(c=>c.status!=="Hata");
+    visible.forEach(c=>checked ? selectedIds.add(c.id) : selectedIds.delete(c.id));
+    render();
+  }
+
+  function selectReady(){
+    selectedIds = new Set(candidates.filter(c=>c.status!=="Hata").map(c=>c.id));
+    render();
+    toast(`${selectedIds.size} kayıt seçildi.`);
+  }
+
+  function resetSelection(){
+    if(!selectedIds.size){
+      toast("Silmek için önce en az bir aday seçin.");
+      return;
+    }
+
+    const count = selectedIds.size;
+    if(!confirm(`${count} seçili aday listeden silinsin mi?`)) return;
+
+    candidates = candidates.filter(c=>!selectedIds.has(c.id));
+    selectedIds.clear();
+    document.getElementById("selectAll").checked = false;
+    persist();
+    render();
+    toast(`${count} aday listeden silindi.`);
+  }
+
+  function bodyTextForCandidate(c){
+    return `Merhaba ${c.name},
+
+${c.position || DEFAULT_POSITION} pozisyonu için ${(c.meetingType || "Online").toLocaleLowerCase("tr")} mülakat bilgileriniz aşağıdadır.
+
+Mülakat Tarihi: ${formatDate(c.date)}
+Mülakat Saati: ${c.time}
+Aday No: ${c.candidateNo || "-"}
+İlan No: ${c.jobNo || "-"}
+İkamet: ${c.city || "-"}
+
+İyi görüşmeler dileriz
+
+Yetenek Kazanımı Operasyonları
+Garanti BBVA
+
+
+`;
+  }
+
+  function bodyHtmlForCandidate(c){
+    return `<div style="font-family:Segoe UI,Arial,sans-serif;font-size:14px;line-height:1.55">
+Merhaba <strong>${esc(c.name || "-")}</strong>,<br><br>
+<strong>${esc(c.position || DEFAULT_POSITION)}</strong> pozisyonu için ${esc((c.meetingType || "Online").toLocaleLowerCase("tr"))} mülakat bilgileriniz aşağıdadır.<br><br>
+Mülakat Tarihi: <strong>${esc(formatDate(c.date))}</strong><br>
+Mülakat Saati: <strong>${esc(c.time || "-")}</strong><br>
+Aday No: <strong>${esc(c.candidateNo || "-")}</strong><br>
+İlan No: <strong>${esc(c.jobNo || "-")}</strong><br>
+İkamet: <strong>${esc(c.city || "-")}</strong><br><br>
+İyi görüşmeler dileriz<br><br>
+<strong>Yetenek Kazanımı Operasyonları</strong><br>
+<strong>Garanti BBVA</strong><br><br><br>
+</div>`;
+  }
+
+  function openCandidate(index){
+    selectedIndex = index;
+    const c = candidates[index];
+    const start = `${c.date}T${c.time}`;
+    const end = addMinutes(start,20);
+
+    document.getElementById("dName").value = c.name;
+    document.getElementById("dEmail").value = c.email;
+    document.getElementById("dPhone").value = c.phone || "";
+    document.getElementById("dCandidateNo").value = c.candidateNo;
+    document.getElementById("dCity").value = c.city;
+    document.getElementById("dRegion").value = c.region || "";
+    document.getElementById("dJobNo").value = c.jobNo;
+    document.getElementById("dPosition").value = c.position || DEFAULT_POSITION;
+    document.getElementById("dDate").value = c.date || "";
+    document.getElementById("dTime").value = c.time || "";
+    document.getElementById("dMeetingType").value = c.meetingType || "Online";
+    document.getElementById("dStart").value = start;
+    document.getElementById("dEnd").value = end;
+    document.getElementById("dOptional").value = c.optional || "";
+    document.getElementById("dLocation").value = "Microsoft Teams Meeting";
+    document.getElementById("dSubject").value =
+      `${c.name.toLocaleUpperCase("tr")} - ${c.position || DEFAULT_POSITION} Online Mülakat Linki / Garanti BBVA – (${c.city || "İkamet"})`;
+    document.getElementById("dBody").value = bodyTextForCandidate(c);
+
+    document.getElementById("drawer").classList.add("open");
+    document.getElementById("backdrop").classList.add("open");
+  }
+
+  function closeDrawer(){
+    document.getElementById("drawer").classList.remove("open");
+    document.getElementById("backdrop").classList.remove("open");
+  }
+
+  function syncCandidateFromDrawer(showMessage=false){
+    if(selectedIndex === null || selectedIndex < 0) return null;
+    const c = candidates[selectedIndex];
+    c.name = document.getElementById("dName").value.trim();
+    c.email = document.getElementById("dEmail").value.trim();
+    c.phone = document.getElementById("dPhone").value.trim();
+    c.candidateNo = document.getElementById("dCandidateNo").value.trim();
+    c.city = document.getElementById("dCity").value.trim();
+    c.region = document.getElementById("dRegion").value.trim();
+    c.jobNo = document.getElementById("dJobNo").value.trim();
+    c.position = document.getElementById("dPosition").value.trim() || DEFAULT_POSITION;
+    c.date = document.getElementById("dDate").value;
+    c.time = document.getElementById("dTime").value;
+    c.meetingType = document.getElementById("dMeetingType").value.trim() || "Online";
+    c.optional = document.getElementById("dOptional").value.trim();
+    c.errors = validateCandidate(c);
+    c.status = c.errors.length ? "Hata" : (c.opened ? "Taslak Açıldı" : "Hazır");
+    persist();
+    render();
+    if(showMessage) toast(c.errors.length ? `Kayıt güncellendi; ${c.errors.join(", ")}` : `${c.name} bilgileri güncellendi.`);
+    return c;
+  }
+
+  function saveCandidateEdits(){
+    const c = syncCandidateFromDrawer(true);
+    if(!c) return;
+    const start = c.date && c.time ? `${c.date}T${c.time}` : "";
+    if(start){
+      document.getElementById("dStart").value = start;
+      document.getElementById("dEnd").value = addMinutes(start,20);
+      document.getElementById("dSubject").value =
+        `${c.name.toLocaleUpperCase("tr")} - ${c.position || DEFAULT_POSITION} Online Mülakat Linki / Garanti BBVA – (${c.city || "İkamet"})`;
+      document.getElementById("dBody").value = bodyTextForCandidate(c);
+    }
+  }
+
+  function meetingFromDrawer(){
+    const c = syncCandidateFromDrawer(false);
+    return {
+      c,
+      subject:document.getElementById("dSubject").value.trim(),
+      start:document.getElementById("dStart").value,
+      end:document.getElementById("dEnd").value,
+      optional:document.getElementById("dOptional").value.split(";").map(x=>x.trim()).filter(Boolean),
+      location:document.getElementById("dLocation").value.trim(),
+      body:document.getElementById("dBody").value,
+      bodyHtml:bodyHtmlForCandidate(c)
+    };
+  }
+
+  function meetingFromCandidate(c){
+    const start = `${c.date}T${c.time}`;
+    return {
+      c,
+      subject:`${c.name.toLocaleUpperCase("tr")} - ${c.position || DEFAULT_POSITION} Online Mülakat Linki / Garanti BBVA – (${c.city || "İkamet"})`,
+      start,
+      end:addMinutes(start,20),
+      optional:String(c.optional || "").split(";").map(x=>x.trim()).filter(Boolean),
+      location:(c.meetingType || "Online").toLocaleLowerCase("tr")==="online" ? "Microsoft Teams Meeting" : (c.meetingType || "Görüşme"),
+      body:bodyTextForCandidate(c),
+      bodyHtml:bodyHtmlForCandidate(c)
+    };
+  }
+
+  function escapeIcs(v){
+    return String(v || "")
+      .replace(/\\/g,"\\\\")
+      .replace(/\r?\n/g,"\\n")
+      .replace(/,/g,"\\,")
+      .replace(/;/g,"\\;");
+  }
+
+  function icsDate(value){
+    return new Date(value).toISOString().replace(/[-:]/g,"").replace(/\.\d{3}Z$/,"Z");
+  }
+
+  function attendeeLine(email, role){
+    const clean = String(email || "").trim();
+    if(!clean) return null;
+    return `ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=${role};PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${clean}`;
+  }
+
+  function buildIcs(m){
+    // Aday REQUIRED, opsiyonel katılımcılar OPTIONAL olarak ICS içine eklenir.
+    // METHOD:PUBLISH korunur; dosya açıldığında Outlook'ta katılımcılar görünür, otomatik gönderim yapılmaz.
+    const attendees = [
+      attendeeLine(m.c.email, "REQ-PARTICIPANT"),
+      ...m.optional.map(email => attendeeLine(email, "OPT-PARTICIPANT"))
+    ].filter(Boolean);
+
+    return [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "CALSCALE:GREGORIAN",
+      "PRODID:-//Yetenek Kazanimi Operasyonlari//TR",
+      "METHOD:PUBLISH",
+      "BEGIN:VEVENT",
+      `UID:${Date.now()}-${Math.random().toString(36).slice(2)}@yetenekkazanimi`,
+      `DTSTAMP:${icsDate(new Date().toISOString())}`,
+      `DTSTART:${icsDate(m.start)}`,
+      `DTEND:${icsDate(m.end)}`,
+      `SUMMARY:${escapeIcs(m.subject)}`,
+      `DESCRIPTION:${escapeIcs(m.body)}`,
+      `X-ALT-DESC;FMTTYPE=text/html:${escapeIcs(m.bodyHtml || m.body)}`,
+      ...attendees,
+      `LOCATION:${escapeIcs(m.location)}`,
+      "STATUS:TENTATIVE",
+      "TRANSP:OPAQUE",
+      "SEQUENCE:0",
+      "END:VEVENT",
+      "END:VCALENDAR"
+    ].join("\r\n");
+  }
+
+  function candidateRowNo(c){
+    const idx = candidates.findIndex(x=>x.id===c.id);
+    return idx >= 0 ? idx + 1 : 0;
+  }
+
+  function downloadIcsForMeeting(m,rowNo=null){
+    const blob = new Blob([buildIcs(m)],{type:"text/calendar;charset=utf-8"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    const safeName = m.c.name.replace(/[^\wçğıöşüÇĞİÖŞÜ-]+/g,"_").replace(/^_+|_+$/g,"") || "aday";
+    const prefix = rowNo ? `${String(rowNo).padStart(2,"0")}_` : "";
+    a.download = `${prefix}${safeName}_mulakat_taslagi.ics`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function openOutlookForMeeting(m){
+    const params = new URLSearchParams({
+      subject:m.subject,
+      body:m.body,
+      startdt:new Date(m.start).toISOString(),
+      enddt:new Date(m.end).toISOString(),
+      location:m.location,
+      to:m.c.email,
+      cc:m.optional.join(";")
+    });
+
+    window.open(
+      "https://outlook.office.com/calendar/0/deeplink/compose?" + params.toString(),
+      "_blank",
+      "noopener,noreferrer"
+    );
+  }
+
+  function markOpened(c){
+    const idx = candidates.findIndex(x=>x.id===c.id);
+    if(idx>=0){
+      candidates[idx].status = "Taslak Açıldı";
+      candidates[idx].opened = true;
+      persist();
+      render();
+    }
+  }
+
+  function downloadCurrentIcs(){
+    const m = meetingFromDrawer();
+    downloadIcsForMeeting(m);
+    toast(`${m.c.name} için ICS indirildi.`);
+  }
+
+  function quickSend(index){
+    const c = candidates[index];
+    if(c.status==="Hata") return;
+    const m = meetingFromCandidate(c);
+    downloadIcsForMeeting(m);
+    openOutlookForMeeting(m);
+    markOpened(c);
+    toast(`${c.name} için meeting taslağı açıldı.`);
+  }
+
+
+  async function downloadSelectedIcs(){
+    const list = candidates.filter(c=>selectedIds.has(c.id) && c.status!=="Hata");
+    if(!list.length){
+      toast("Önce en az bir geçerli kayıt seçin.");
+      return;
+    }
+
+    for(let i=0;i<list.length;i++){
+      downloadIcsForMeeting(meetingFromCandidate(list[i]),candidateRowNo(list[i]));
+      await new Promise(r=>setTimeout(r,250));
+    }
+    toast(`${list.length} ICS dosyası indirildi.`);
+  }
+
+  function openNextSelected(){
+    const next = candidates.find(c=>selectedIds.has(c.id) && c.status!=="Hata" && c.status!=="Taslak Açıldı");
+    if(!next){
+      toast("Seçili ve açılmamış meeting kalmadı.");
+      return;
+    }
+
+    const m = meetingFromCandidate(next);
+    downloadIcsForMeeting(m);
+    openOutlookForMeeting(m);
+    markOpened(next);
+    toast(`${next.name} için Outlook taslağı açıldı. Sonraki kayıt için butona tekrar basın.`);
+  }
+
+
+  async function downloadSelectedZip(){
+    const list = candidates.filter(c=>selectedIds.has(c.id) && c.status!=="Hata");
+    if(!list.length){
+      toast("Önce en az bir geçerli kayıt seçin.");
+      return;
+    }
+
+    if(typeof JSZip === "undefined"){
+      toast("ZIP kütüphanesi yüklenemedi. İnternet bağlantınızı kontrol edin.");
+      return;
+    }
+
+    const zip = new JSZip();
+    const usedNames = new Set();
+
+    list.forEach((c,index)=>{
+      const m = meetingFromCandidate(c);
+      const rowNo = candidateRowNo(c);
+      let base = c.name
+        .replace(/[^\wçğıöşüÇĞİÖŞÜ-]+/g,"_")
+        .replace(/^_+|_+$/g,"") || `aday_${rowNo || index+1}`;
+      const numberedBase = `${String(rowNo || index+1).padStart(2,"0")}_${base}`;
+
+      let fileName = `${numberedBase}_mulakat_taslagi.ics`;
+      let counter = 2;
+      while(usedNames.has(fileName)){
+        fileName = `${numberedBase}_${counter}_mulakat_taslagi.ics`;
+        counter++;
+      }
+      usedNames.add(fileName);
+      zip.file(fileName, buildIcs(m));
+    });
+
+    const blob = await zip.generateAsync({
+      type:"blob",
+      compression:"DEFLATE",
+      compressionOptions:{level:6}
+    });
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `secilen_${list.length}_meeting_ics.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+
+    toast(`${list.length} ICS dosyası ZIP olarak indirildi.`);
+  }
+
+  function clearAll(){
+    if(!confirm("Tüm liste ve durum bilgileri silinsin mi?")) return;
+    candidates = [];
+    selectedIds.clear();
+    persist();
+    render();
+    toast("Liste temizlendi.");
+  }
+
+  const EMBEDDED_TEMPLATE_BASE64 = "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";
+
+  function downloadTemplate(){
+    const binary = atob(EMBEDDED_TEMPLATE_BASE64);
+    const bytes = new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++) bytes[i] = binary.charCodeAt(i);
+    const blob = new Blob([bytes],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "50_kisilik_toplu_meeting_sablonu.xlsx";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+    toast("Ekli Excel şablonu indirildi.");
+  }
+
+  function formatDate(iso){
+    if(!iso) return "-";
+    const [y,m,d] = iso.split("-");
+    return `${d}.${m}.${y}`;
+  }
+
+  function esc(v){
+    return String(v ?? "").replace(/[&<>"']/g,s=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[s]));
+  }
+
+  function toast(message){
+    const el = document.getElementById("toast");
+    el.textContent = message;
+    el.classList.add("show");
+    setTimeout(()=>el.classList.remove("show"),3600);
+  }
+
+  render();
+</script>
+</body>
+</html>
