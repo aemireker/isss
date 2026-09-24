@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Yetenek Kazanımı | Operasyon Merkezi</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+:root{
+  --navy:#071e41; --blue:#004481; --blue2:#1464a5; --cyan:#49a5e6; --aqua:#2dcccd;
+  --bg:#f4f7fa; --card:#fff; --text:#17324d; --muted:#6c8094; --border:#dce5ed;
+  --success:#0a7b55; --warning:#a76800; --danger:#c62828; --purple:#5b52b6;
+  --shadow:0 12px 32px rgba(7,33,70,.10); --shadow-lg:0 22px 55px rgba(7,33,70,.18);
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:"BBVABentonSans","Segoe UI",Arial,sans-serif;color:var(--text);background:linear-gradient(180deg,#eef4f8 0%,var(--bg) 100%)}
+button,input,select,textarea{font:inherit}
+button{border:0;cursor:pointer;border-radius:10px;padding:10px 14px;font-weight:700;transition:.16s ease}
+button:hover{transform:translateY(-1px)} button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn-primary{background:var(--aqua);color:var(--navy)} .btn-secondary{background:#fff;color:var(--blue);border:1px solid var(--border)}
+.btn-outline{background:#fff;color:var(--blue);border:1px solid var(--blue)} .btn-danger{background:#fff1f1;color:var(--danger);border:1px solid #f2cccc}
+.btn-ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.26)} .btn-sm{padding:7px 10px;font-size:12px}
+.topbar{background:linear-gradient(120deg,var(--navy),var(--blue) 60%,var(--blue2));color:#fff;padding:22px 28px;display:flex;justify-content:space-between;align-items:center;gap:20px;box-shadow:var(--shadow)}
+.brand{display:flex;align-items:center;gap:13px}.brand-mark{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.12);display:grid;place-items:center;font-weight:900;letter-spacing:.5px}.brand h1{margin:0;font-size:23px}.brand p{margin:5px 0 0;opacity:.78;font-size:12px}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.container{max-width:1760px;margin:0 auto;padding:22px 26px 40px}
+.notice{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid var(--border);border-radius:14px;padding:13px 15px;margin-bottom:18px;box-shadow:0 7px 20px rgba(7,33,70,.06)}
+.notice strong{color:var(--blue)} .notice small{color:var(--muted);line-height:1.5}
+.metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:18px}.metric{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:15px;box-shadow:0 7px 20px rgba(7,33,70,.06)}
+.metric span{display:block;color:var(--muted);font-size:11px}.metric strong{display:block;font-size:24px;color:var(--navy);margin-top:4px}.metric em{display:block;color:var(--muted);font-style:normal;font-size:10px;margin-top:4px}
+.toolbar{background:#fff;border:1px solid var(--border);border-radius:15px;padding:12px;display:grid;grid-template-columns:1.25fr .65fr .65fr .65fr auto;gap:9px;align-items:center;box-shadow:var(--shadow);margin-bottom:16px}
+.control, .field input,.field select,.field textarea,.toolbar input,.toolbar select{width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 11px;background:#fff;color:var(--text);outline:none}.toolbar input:focus,.toolbar select:focus,.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(73,165,230,.12)}
+.toolbar-actions{display:flex;gap:7px;justify-content:flex-end}
+.batch{display:flex;justify-content:space-between;gap:12px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:15px;padding:12px 14px;margin-bottom:16px;box-shadow:0 7px 20px rgba(7,33,70,.06)}
+.batch-left{display:flex;gap:7px;flex-wrap:wrap}.batch-right{min-width:280px}.progress{height:9px;background:#e9eff4;border-radius:999px;overflow:hidden}.progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--aqua));transition:.2s}.progress-text{font-size:11px;color:var(--muted);margin-top:5px;text-align:right}
+.panel{background:#fff;border:1px solid var(--border);border-radius:15px;overflow:hidden;box-shadow:var(--shadow)} .panel-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}.panel-head h2{margin:0;font-size:17px}.panel-head small{color:var(--muted)}
+.table-wrap{overflow:auto;max-height:66vh} table{width:100%;border-collapse:separate;border-spacing:0;min-width:1360px}th,td{padding:9px 8px;border-bottom:1px solid #edf2f6;text-align:left;vertical-align:middle;font-size:11px;overflow-wrap:anywhere}th{position:sticky;top:0;z-index:3;background:#f8fafc;color:var(--blue);font-weight:800;box-shadow:0 1px 0 #e5ebf0}tbody tr:hover td{background:#fbfdff}.name-cell{font-weight:800;color:var(--navy)}.subtle{color:var(--muted)}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:800;white-space:nowrap}.badge-ready{background:#e7f6f0;color:var(--success)}.badge-opened{background:#fff4da;color:var(--warning)}.badge-copied{background:#eef0ff;color:var(--purple)}.badge-error{background:#fdecec;color:var(--danger)}.badge-online{background:#eaf6ff;color:#1464a5}.badge-physical{background:#f0edff;color:#5b52b6}
+.row-actions{display:flex;gap:5px;flex-wrap:wrap}.empty{padding:54px;text-align:center;color:var(--muted)}
+.modal-backdrop{position:fixed;inset:0;background:rgba(7,33,70,.48);opacity:0;pointer-events:none;transition:.2s;z-index:40}.modal-backdrop.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;right:0;top:0;height:100vh;width:min(860px,96vw);background:#fff;z-index:41;transform:translateX(100%);transition:.24s ease;box-shadow:-22px 0 60px rgba(7,33,70,.25);display:flex;flex-direction:column}.drawer.open{transform:translateX(0)}
+.drawer-head{padding:18px 20px;background:linear-gradient(120deg,var(--navy),var(--blue));color:#fff;display:flex;justify-content:space-between;gap:12px;align-items:center}.drawer-head h3{margin:0}.drawer-head small{display:block;opacity:.7;margin-top:4px}.drawer-body{padding:18px;overflow:auto}.section{border:1px solid var(--border);border-radius:14px;padding:15px;margin-bottom:14px}.section h4{margin:0 0 12px;color:var(--blue);font-size:14px}.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}.field label{display:block;font-size:11px;color:var(--muted);font-weight:800;margin-bottom:5px}.field{min-width:0}.help{font-size:10px;color:var(--muted);line-height:1.45;margin-top:4px}.preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.preview-card{background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:12px}.preview-card h5{margin:0 0 8px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}.preview-card .value{font-size:13px;line-height:1.55;white-space:pre-wrap;min-height:90px}.drawer-actions{border-top:1px solid var(--border);padding:12px 18px;display:flex;justify-content:flex-end;gap:8px;background:#fff}
+.manager{position:fixed;inset:0;z-index:50;display:none;place-items:center;padding:18px}.manager.open{display:grid}.manager-card{width:min(1080px,96vw);max-height:90vh;background:#fff;border-radius:18px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;overflow:hidden}.manager-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}.manager-head h3{margin:0}.template-list{padding:16px;overflow:auto;display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.template-card{border:1px solid var(--border);border-radius:13px;padding:13px;background:#fbfdff}.template-card .title{font-weight:800;color:var(--navy)}.template-card .meta{font-size:10px;color:var(--muted);margin-top:3px}.template-card .sample{font-size:11px;color:var(--text);margin:9px 0;line-height:1.45;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap}.template-actions{display:flex;gap:6px}.manager-editor{border-top:1px solid var(--border);padding:16px;display:none}.manager-editor.open{display:block}.manager-editor .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.manager-editor textarea{min-height:150px}
+.toast{position:fixed;right:20px;bottom:20px;z-index:100;background:var(--navy);color:#fff;padding:12px 15px;border-radius:11px;box-shadow:var(--shadow-lg);display:none;max-width:430px;font-size:12px}.toast.show{display:block}
+.kicker{font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:var(--cyan);font-weight:900}.inline{display:flex;gap:7px;align-items:center}.nowrap{white-space:nowrap}
+@media(max-width:1200px){.metrics{grid-template-columns:repeat(3,1fr)}.toolbar{grid-template-columns:1fr 1fr}.toolbar-actions{justify-content:flex-start}.batch{flex-direction:column;align-items:stretch}.batch-right{min-width:0}.progress-text{text-align:left}.preview-grid,.template-list{grid-template-columns:1fr}}
+@media(max-width:700px){.topbar{align-items:flex-start;flex-direction:column}.top-actions{justify-content:flex-start}.container{padding:14px}.metrics{grid-template-columns:repeat(2,1fr)}.grid-2,.grid-3{grid-template-columns:1fr}.drawer{width:100vw}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">YK</div>
+    <div><h1>Yetenek Kazanımı Operasyon Merkezi</h1><p>İlan • Aday • Toplantı • Mesaj şablonu • Outlook hazırlığı</p></div>
+  </div>
+  <div class="top-actions">
+    <button class="btn-ghost" onclick="openTemplateManager()">Şablon Yönetimi</button>
+    <button class="btn-secondary" onclick="downloadTemplate()">Excel Şablonu</button>
+    <button class="btn-primary" onclick="clearAll()">Listeyi Temizle</button>
+  </div>
+</header>
+
+<main class="container">
+  <div class="notice"><div class="kicker">İş akışı</div><div><strong>Excel'i yükle → şablonu otomatik seç → mesajı kontrol et → kopyala → Outlook'a yapıştır.</strong><br><small>Kurumsal bilgisayar Outlook gönderimini engellese bile uygulama mesajı, toplantı bilgilerini ve varsa katılımcıları hazır tutar. “Gönderildi” durumu otomatik verilmez; yalnızca taslak/kopyalama adımları takip edilir.</small></div></div>
+
+  <section class="metrics">
+    <div class="metric"><span>Toplam Kayıt</span><strong id="mTotal">0</strong><em>yüklenen satır</em></div>
+    <div class="metric"><span>Hazır</span><strong id="mReady">0</strong><em>işleme uygun</em></div>
+    <div class="metric"><span>Hatalı</span><strong id="mError">0</strong><em>eksik/geçersiz veri</em></div>
+    <div class="metric"><span>Online</span><strong id="mOnline">0</strong><em>toplantı türü</em></div>
+    <div class="metric"><span>Fiziki</span><strong id="mPhysical">0</strong><em>toplantı türü</em></div>
+    <div class="metric"><span>İşlenen</span><strong id="mDone">0</strong><em>kopyalandı / taslak açıldı</em></div>
+  </section>
+
+  <section class="toolbar">
+    <div><input id="fileInput" type="file" accept=".xlsx,.xls,.csv"></div>
+    <input id="searchInput" placeholder="Aday, e-posta, ilan, pozisyon, ikamet ara…">
+    <select id="templateFilter"><option value="">Tüm Şablonlar</option></select>
+    <select id="typeFilter"><option value="">Tüm Toplantılar</option><option>Online</option><option>Fiziki</option></select>
+    <div class="toolbar-actions"><button class="btn-outline btn-sm" onclick="exportCurrentExcel()">Mevcut Listeyi Excel'e Aktar</button></div>
+  </section>
+
+  <section class="batch">
+    <div class="batch-left">
+      <button class="btn-outline btn-sm" onclick="selectValid()">Geçerli Olanları Seç</button>
+      <button class="btn-outline btn-sm" onclick="copySelectedBundle()">Seçilen Mesajları Kopyala</button>
+      <button class="btn-outline btn-sm" onclick="downloadSelectedIcs()">Seçilen ICS'leri İndir</button>
+      <button class="btn-outline btn-sm" onclick="downloadSelectedZip()">Seçilen ICS'leri ZIP</button>
+      <button class="btn-primary btn-sm" onclick="openNextSelected()">Sıradaki Outlook Taslağı</button>
+      <button class="btn-danger btn-sm" onclick="resetSelection()">Seçimleri Sil</button>
+    </div>
+    <div class="batch-right"><div class="progress"><span id="progressBar"></span></div><div id="progressText" class="progress-text">0 / 0 kayıt işlendi</div></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><div><div class="kicker">Operasyon kuyruğu</div><h2>Aday & Meeting Listesi</h2></div><small id="resultCount">0 kayıt</small></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th><input id="selectAll" type="checkbox" onchange="toggleSelectAll(this.checked)"></th>
+          <th>#</th><th>Aday</th><th>İlan / Pozisyon</th><th>İkamet</th><th>Tarih</th><th>Saat</th><th>Toplantı</th><th>Şablon</th><th>Durum</th><th>İşlem</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div id="empty" class="empty">Henüz Excel yüklenmedi.</div>
+    </div>
+  </section>
+</main>
+
+<div id="backdrop" class="modal-backdrop" onclick="closeDrawer()"></div>
+<aside id="drawer" class="drawer">
+  <div class="drawer-head"><div><h3 id="drawerTitle">Kayıt Düzenle</h3><small id="drawerSubtitle">Mesaj ve toplantı önizlemesi</small></div><button class="btn-ghost btn-sm" onclick="closeDrawer()">Kapat</button></div>
+  <div class="drawer-body">
+    <section class="section">
+      <div class="inline" style="justify-content:space-between"><h4 style="margin:0">1. Aday ve İlan Bilgileri</h4><button class="btn-secondary btn-sm" onclick="saveDrawer(true)">Bilgileri Kaydet</button></div>
+      <div class="grid-2" style="margin-top:12px">
+        <div class="field"><label>Ad Soyad</label><input id="dName"></div><div class="field"><label>E-Posta</label><input id="dEmail" type="email"></div>
+        <div class="field"><label>Telefon</label><input id="dPhone"></div><div class="field"><label>Aday No</label><input id="dCandidateNo"></div>
+        <div class="field"><label>İkamet</label><input id="dCity"></div><div class="field"><label>Bölge</label><input id="dRegion"></div>
+        <div class="field"><label>İlan No</label><input id="dJobNo"></div><div class="field"><label>Pozisyon</label><input id="dPosition"></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h4>2. Toplantı Bilgileri</h4>
+      <div class="grid-3">
+        <div class="field"><label>Tarih</label><input id="dDate" type="date"></div><div class="field"><label>Saat</label><input id="dTime" type="time"></div>
+        <div class="field"><label>Toplantı Türü</label><select id="dMeetingType"><option>Online</option><option>Fiziki</option></select></div>
+        <div class="field"><label>Süre (dk)</label><input id="dDuration" type="number" min="1" value="20"></div><div class="field"><label>Konum</label><input id="dLocation" placeholder="Ofis / salon / Microsoft Teams"></div>
+        <div class="field"><label>Toplantı Linki <span style="font-weight:600;color:#6B7F93">(opsiyonel — sonradan eklenebilir)</span></label><input id="dMeetingLink" placeholder="https://teams.microsoft.com/…"></div>
+      </div>
+      <div class="grid-2" style="margin-top:10px"><div class="field"><label>Gerekli Katılımcılar</label><input id="dRequired" placeholder="mail1@firma.com; mail2@firma.com"></div><div class="field"><label>Opsiyonel Katılımcılar</label><input id="dOptional" placeholder="mail1@firma.com; mail2@firma.com"></div></div>
+      <div class="help">Online toplantıda linki, fiziki toplantıda konumu doldurun. Katılımcıları “;” ile ayırabilirsiniz.</div>
+    </section>
+
+    <section class="section">
+      <div class="inline" style="justify-content:space-between"><h4 style="margin:0">3. İletişim Şablonu</h4><button class="btn-secondary btn-sm" onclick="resetCustomText()">Şablondan Yenile</button></div>
+      <div class="grid-2" style="margin-top:12px"><div class="field"><label>Şablon</label><select id="dTemplate"></select></div><div class="field"><label>Özel Başlık</label><input id="dCustomSubject" placeholder="Boş bırakılırsa şablon kullanılır"></div></div>
+      <div class="field" style="margin-top:10px"><label>Özel Metin</label><textarea id="dCustomBody" rows="8" placeholder="Boş bırakılırsa şablon kullanılır"></textarea><div class="help">Kullanılabilir alanlar: {{AD}}, {{AD_SOYAD}}, {{IKAMET}}, {{ILAN_NO}}, {{POZISYON}}, {{TARIH}}, {{SAAT}}, {{TOPLANTI_TURU}}, {{KONUM}}, {{TOPLANTI_LINKI}}, {{ADAY_NO}}, {{SURE}}</div></div>
+    </section>
+
+    <section class="section">
+      <div class="inline" style="justify-content:space-between"><h4 style="margin:0">4. Gönderime Hazır Önizleme</h4><div class="inline"><button class="btn-outline btn-sm" onclick="copyCurrentMessage()">Mesajı Kopyala</button><button class="btn-primary btn-sm" onclick="openCurrentOutlook()">Outlook Taslağı</button></div></div>
+      <div class="preview-grid" style="margin-top:12px">
+        <div class="preview-card"><h5>Konu</h5><div id="previewSubject" class="value"></div></div>
+        <div class="preview-card"><h5>Toplantı Özeti</h5><div id="previewMeeting" class="value"></div></div>
+      </div>
+      <div class="preview-card" style="margin-top:10px"><h5>Mesaj Metni</h5><div id="previewBody" class="value"></div></div>
+    </section>
+  </div>
+  <div class="drawer-actions"><button class="btn-outline" onclick="downloadCurrentIcs()">ICS İndir</button><button class="btn-secondary" onclick="closeDrawer()">Kapat</button><button class="btn-primary" onclick="copyCurrentMessage()">Mesajı Kopyala</button></div>
+</aside>
+
+<div id="managerBackdrop" class="modal-backdrop" onclick="closeTemplateManager()"></div>
+<div id="manager" class="manager">
+  <div class="manager-card">
+    <div class="manager-head"><div><div class="kicker">Şablon kütüphanesi</div><h3>İlan ve Meeting Mesajları</h3></div><div class="inline"><button class="btn-primary btn-sm" onclick="newTemplate()">+ Yeni Şablon</button><button class="btn-secondary btn-sm" onclick="closeTemplateManager()">Kapat</button></div></div>
+    <div id="templateList" class="template-list"></div>
+    <div id="managerEditor" class="manager-editor">
+      <div class="grid"><div class="field"><label>Kod</label><input id="tCode" placeholder="ORNEK_ONLINE_01"></div><div class="field"><label>Şablon Adı</label><input id="tName"></div><div class="field"><label>Toplantı Türü</label><select id="tType"><option>Online</option><option>Fiziki</option></select></div><div class="field"><label>Kısa Açıklama</label><input id="tUsage"></div></div>
+      <div class="grid" style="margin-top:10px"><div class="field"><label>Başlık Şablonu</label><textarea id="tSubject" rows="5"></textarea></div><div class="field"><label>Metin Şablonu</label><textarea id="tBody" rows="8"></textarea></div></div>
+      <div class="inline" style="justify-content:flex-end;margin-top:10px"><button class="btn-secondary btn-sm" onclick="cancelTemplateEdit()">Vazgeç</button><button class="btn-primary btn-sm" onclick="saveTemplate()">Şablonu Kaydet</button></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const MAX_ROWS=500;
+const STORAGE_KEY="yk_operation_center_v2";
+const TEMPLATE_KEY="yk_message_templates_v2";
+let candidates=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
+let templates=JSON.parse(localStorage.getItem(TEMPLATE_KEY)||"null")||[
+ {code:"ONLINE_IZMIR",name:"Online — İsim Soyisim + İkamet",type:"Online",usage:"Başlıkta isim soyisim, sonunda ikamet otomatik gelir.",subject:"{{AD_SOYAD}} - {{POZISYON}} Online Mülakat Linki / Garanti BBVA – ({{IKAMET}})",body:"Merhaba {{AD}},\n\n{{POZISYON}} pozisyonu için online mülakat bilgileriniz aşağıdadır.\n\nMülakat Tarihi: {{TARIH}}\nMülakat Saati: {{SAAT}}\nAday No: {{ADAY_NO}}\nİlan No: {{ILAN_NO}}\nİkamet: {{IKAMET}}\nToplantı Linki: {{TOPLANTI_LINKI}}\n\nİyi görüşmeler dileriz\n\nYetenek Kazanımı Operasyonları\nGaranti BBVA"},
+ {code:"ONLINE_ISIM",name:"Online — Sadece İsim",type:"Online",usage:"Başlıkta sadece adayın adı.",subject:"{{AD}} - {{POZISYON}} Online Mülakat",body:"Merhaba {{AD}},\n\n{{POZISYON}} pozisyonu için online mülakat bilgileriniz aşağıdadır.\n\nMülakat Tarihi: {{TARIH}}\nMülakat Saati: {{SAAT}}\nAday No: {{ADAY_NO}}\nİlan No: {{ILAN_NO}}\nToplantı Linki: {{TOPLANTI_LINKI}}\n\nİyi görüşmeler dileriz\n\nYetenek Kazanımı Operasyonları\nGaranti BBVA"},
+ {code:"FIZIKI_STANDART",name:"Fiziki — Standart",type:"Fiziki",usage:"Fiziki görüşme; konum metne otomatik gelir.",subject:"{{AD_SOYAD}} - {{POZISYON}} Fiziki Mülakat",body:"Merhaba {{AD}},\n\n{{POZISYON}} pozisyonu için fiziki mülakat bilgileriniz aşağıdadır.\n\nMülakat Tarihi: {{TARIH}}\nMülakat Saati: {{SAAT}}\nAday No: {{ADAY_NO}}\nİlan No: {{ILAN_NO}}\nGörüşme Yeri: {{KONUM}}\n\nİyi görüşmeler dileriz\n\nYetenek Kazanımı Operasyonları\nGaranti BBVA"},
+ {code:"FIZIKI_ISIM",name:"Fiziki — Sadece İsim",type:"Fiziki",usage:"Başlıkta sadece adayın adı; konum metne otomatik gelir.",subject:"{{AD}} - {{POZISYON}} Fiziki Mülakat",body:"Merhaba {{AD}},\n\n{{POZISYON}} pozisyonu için fiziki mülakat bilgileriniz aşağıdadır.\n\nTarih: {{TARIH}}\nSaat: {{SAAT}}\nAdres / Konum: {{KONUM}}\n\nİyi görüşmeler dileriz\n\nYetenek Kazanımı Operasyonları\nGaranti BBVA"}
+];
+let selectedIds=new Set(); let selectedIndex=null; let editingTemplateIndex=null; let suppressAuto=false;
+const aliases={
+ template:["Şablon","Sablon","Şablon Kodu","Sablon Kodu","Template","Template Code"], name:["Ad Soyad","AD SOYAD","Aday Soyad","Aday","İsim","Isim","Name"],
+ email:["E-Posta","Eposta","Email","Mail"], phone:["Telefon","Telefon No","Telefon no","Phone"], candidateNo:["Aday No","Aday no","ADAY NO","AdayNo","Candidate No"],
+ city:["İkamet","Ikamet","Şehir","Sehir","City"], region:["Bölge","Bolge","Region"], jobNo:["İlan No","Ilan No","İlan","Ilan","Job No"], position:["Pozisyon","Position","Rol"],
+ date:["Tarih","Görüşme Tarihi","Gorusme Tarihi","Meeting Tarihi","Mülakat Tarihi","Mulakat Tarihi","Date"], time:["Saat","Başlangıç Saati","Baslangic Saati","Time"],
+ type:["Toplantı Türü","Toplanti Turu","Meeting Type"], duration:["Süre (dk)","Sure (dk)","Süre","Duration"], location:["Konum","Lokasyon","Adres","Location"], link:["Toplantı Linki","Toplanti Linki","Meeting Link","Teams Link"],
+ required:["Gerekli Katılımcılar","Gerekli Katilimcilar","Required Attendees","Required"], optional:["Opsiyonel Katılımcılar","Opsiyonel Katilimcilar","Optional Attendees","Optional","CC"], customSubject:["Özel Başlık","Ozel Başlik","Custom Subject"], customBody:["Özel Metin","Ozel Metin","Custom Body"]
+};
+function pick(row,keys){for(const k of keys){if(row[k]!==undefined&&row[k]!==null&&String(row[k]).trim()!=="") return row[k]}return ""}
+function normDate(v){if(!v)return "";if(typeof v==="number"){const d=XLSX.SSF.parse_date_code(v);return d?`${d.y}-${String(d.m).padStart(2,"0")}-${String(d.d).padStart(2,"0")}`:""}const s=String(v).trim();let m=s.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/);if(m)return `${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;const d=new Date(s);return isNaN(d)?"":d.toISOString().slice(0,10)}
+function normTime(v){if(v===undefined||v===null||v==="")return "";if(typeof v==="number"){let mins=Math.round(v*24*60);return `${String(Math.floor(mins/60)%24).padStart(2,"0")}:${String(mins%60).padStart(2,"0")}`}const m=String(v).match(/(\d{1,2})[:.](\d{2})/);return m?`${m[1].padStart(2,"0")}:${m[2]}`:""}
+function addMinutes(dateTime,mins){const d=new Date(dateTime);d.setMinutes(d.getMinutes()+Number(mins||20));const l=new Date(d.getTime()-d.getTimezoneOffset()*60000);return l.toISOString().slice(0,16)}
+function formatDate(v){if(!v)return "-";const [y,m,d]=v.split("-");return `${d}.${m}.${y}`}
+function splitName(full){const p=String(full||"").trim().replace(/\s+/g," ").split(" ");if(p.length<=1)return {first:p[0]||"",last:""};return {first:p.slice(0,-1).join(" "),last:p[p.length-1]}}
+function slug(v){return String(v||"").replace(/[^\wçğıöşüÇĞİÖŞÜ-]+/g,"_").replace(/^_+|_+$/g,"")||"aday"}
+function id(){return crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`}
+function saveState(){localStorage.setItem(STORAGE_KEY,JSON.stringify(candidates))}
+function saveTemplates(){localStorage.setItem(TEMPLATE_KEY,JSON.stringify(templates));populateTemplateFilters();populateDrawerTemplates();}
+function esc(v){return String(v??"").replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[s]))}
+function nl2br(v){return String(v||"").split(/\n/).map(line=>{const safe=esc(line);const linked=safe.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noreferrer">$1</a>');if(/^Mülakat Tarihi:/i.test(line)||/^Mülakat Saati:/i.test(line)) return `<strong>${linked}</strong>`;return linked}).join("<br>")}
+function normalizeType(v){const s=String(v||"").toLocaleLowerCase("tr");return s.includes("fiz")||s.includes("ofis")||s.includes("yüz")||s.includes("yuz")?"Fiziki":"Online"}
+function validate(c){const e=[];if(!c.name)e.push("Ad Soyad eksik");if(!c.email)e.push("E-posta eksik");else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email))e.push("E-posta geçersiz");if(!c.date)e.push("Tarih eksik");if(!c.time)e.push("Saat eksik");if(c.meetingType==="Fiziki"&&!c.location)e.push("Konum eksik");return e}
+function candidateFromRow(row,i){const nm=String(pick(row,aliases.name)).trim();const sp=splitName(nm);const c={id:id(),name:nm,firstName:sp.first,lastName:sp.last,email:String(pick(row,aliases.email)).trim(),phone:String(pick(row,aliases.phone)).trim(),candidateNo:String(pick(row,aliases.candidateNo)).trim(),city:String(pick(row,aliases.city)).trim(),region:String(pick(row,aliases.region)).trim(),jobNo:String(pick(row,aliases.jobNo)).trim(),position:String(pick(row,aliases.position)).trim(),date:normDate(pick(row,aliases.date)),time:normTime(pick(row,aliases.time)),meetingType:normalizeType(pick(row,aliases.type)),duration:Number(pick(row,aliases.duration)||20)||20,location:String(pick(row,aliases.location)).trim(),meetingLink:String(pick(row,aliases.link)).trim(),required:String(pick(row,aliases.required)).trim(),optional:String(pick(row,aliases.optional)).trim(),templateCode:String(pick(row,aliases.template)).trim(),customSubject:String(pick(row,aliases.customSubject)).trim(),customBody:String(pick(row,aliases.customBody)).trim(),status:"Hazır",processed:false};
+if(!c.templateCode){c.templateCode=c.meetingType==="Fiziki"?"FIZIKI_STANDART":"ONLINE_IZMIR"}c.errors=validate(c);c.status=c.errors.length?"Hata":"Hazır";return c}
+function getTemplate(c){return templates.find(t=>t.code===c.templateCode)||templates.find(t=>t.type===c.meetingType)||templates[0]}
+function valuesFor(c){const nm=splitName(c.name);return {AD:nm.first||c.name,SOYAD:nm.last,AD_SOYAD:c.name||"",EMAIL:c.email||"",TELEFON:c.phone||"",ADAY_NO:c.candidateNo||"-",IKAMET:c.city||"-",BOLGE:c.region||"-",ILAN_NO:c.jobNo||"-",POZISYON:c.position||"-",TARIH:formatDate(c.date),SAAT:c.time||"-",TOPLANTI_TURU:c.meetingType||"-",SURE:String(c.duration||20),KONUM:c.location||"-",TOPLANTI_LINKI:c.meetingLink||"-",FIRMA:"Garanti BBVA"}}
+function applyTemplateText(txt,c){const vals=valuesFor(c);return String(txt||"").replace(/\{\{\s*([A-ZÇĞİÖŞÜ0-9_]+)\s*\}\}/gi,(m,k)=>vals[k.toUpperCase()]!==undefined?vals[k.toUpperCase()]:m)}
+function generated(c){const t=getTemplate(c);return {subject:c.customSubject?applyTemplateText(c.customSubject,c):applyTemplateText(t.subject,c),body:c.customBody?applyTemplateText(c.customBody,c):applyTemplateText(t.body,c),template:t}}
+function meetingData(c){const g=generated(c);const start=`${c.date}T${c.time}`;return {c,...g,start,end:addMinutes(start,c.duration),location:c.meetingType==="Online"?(c.location||"Microsoft Teams Meeting"):(c.location||""),required:String(c.required||"").split(";").map(x=>x.trim()).filter(Boolean),optional:String(c.optional||"").split(";").map(x=>x.trim()).filter(Boolean)}}
+function statusBadge(c){const cls=c.status==="Hata"?"badge-error":c.status==="Outlook Taslağı"?"badge-opened":c.status==="Kopyalandı"?"badge-copied":"badge-ready";return `<span class="badge ${cls}">${esc(c.status)}</span>`}
+function typeBadge(c){return `<span class="badge ${c.meetingType==="Fiziki"?"badge-physical":"badge-online"}">${esc(c.meetingType)}</span>`}
+function populateTemplateFilters(){const f=document.getElementById("templateFilter");const current=f.value;f.innerHTML='<option value="">Tüm Şablonlar</option>'+templates.map(t=>`<option value="${esc(t.code)}">${esc(t.name)}</option>`).join("");if(templates.some(t=>t.code===current))f.value=current}
+function populateDrawerTemplates(){const f=document.getElementById("dTemplate");const current=f.value;f.innerHTML=templates.map(t=>`<option value="${esc(t.code)}">${esc(t.name)}</option>`).join("");if(templates.some(t=>t.code===current))f.value=current}
+function render(){const q=document.getElementById("searchInput").value.toLocaleLowerCase("tr"), tf=document.getElementById("templateFilter").value, typ=document.getElementById("typeFilter").value;const list=candidates.map((c,i)=>({...c,_i:i})).filter(c=>{const hit=[c.name,c.email,c.phone,c.candidateNo,c.city,c.region,c.jobNo,c.position,c.templateCode,c.meetingType].join(" ").toLocaleLowerCase("tr").includes(q);return hit&&(!tf||c.templateCode===tf)&&(!typ||c.meetingType===typ)});
+document.getElementById("rows").innerHTML=list.map(c=>`<tr><td><input type="checkbox" ${selectedIds.has(c.id)?"checked":""} ${c.status==="Hata"?"disabled":""} onchange="toggleRow('${c.id}',this.checked)"></td><td>${c._i+1}</td><td><div class="name-cell">${esc(c.name||"-")}</div><div class="subtle">${esc(c.email||"-")}</div></td><td><div class="name-cell">${esc(c.jobNo||"-")}</div><div class="subtle">${esc(c.position||"-")}</div></td><td>${esc(c.city||"-")}${c.region?`<div class="subtle">${esc(c.region)}</div>`:""}</td><td class="nowrap">${formatDate(c.date)}</td><td class="nowrap">${esc(c.time||"-")}</td><td>${typeBadge(c)}</td><td><span class="badge">${esc(c.templateCode||"-")}</span></td><td>${statusBadge(c)}</td><td><div class="row-actions"><button class="btn-secondary btn-sm" onclick="openCandidate(${c._i})">Aç</button><button class="btn-outline btn-sm" onclick="copyMessage(${c._i})" ${c.status==="Hata"?"disabled":""}>Kopyala</button><button class="btn-primary btn-sm" onclick="quickOutlook(${c._i})" ${c.status==="Hata"?"disabled":""}>Outlook</button></div></td></tr>`).join("");
+document.getElementById("empty").style.display=list.length?"none":"block";document.getElementById("resultCount").textContent=`${list.length} kayıt`;
+const total=candidates.length,ready=candidates.filter(c=>c.status==="Hazır").length,error=candidates.filter(c=>c.status==="Hata").length,online=candidates.filter(c=>c.meetingType==="Online").length,physical=candidates.filter(c=>c.meetingType==="Fiziki").length,done=candidates.filter(c=>c.status==="Kopyalandı"||c.status==="Outlook Taslağı").length;document.getElementById("mTotal").textContent=total;document.getElementById("mReady").textContent=ready;document.getElementById("mError").textContent=error;document.getElementById("mOnline").textContent=online;document.getElementById("mPhysical").textContent=physical;document.getElementById("mDone").textContent=done;const valid=candidates.filter(c=>c.status!=="Hata").length;document.getElementById("progressBar").style.width=(valid?Math.round(done/valid*100):0)+"%";document.getElementById("progressText").textContent=`${done} / ${valid} kayıt işlendi`;document.getElementById("selectAll").checked=list.length>0&&list.every(c=>selectedIds.has(c.id))}
+function openCandidate(index){selectedIndex=index;const c=candidates[index];document.getElementById("drawerTitle").textContent=c.name||"Kayıt Düzenle";document.getElementById("drawerSubtitle").textContent=(c.jobNo?c.jobNo+" • ":"")+((getTemplate(c)||{}).name||"Mesaj şablonu");
+["Name","Email","Phone","CandidateNo","City","Region","JobNo","Position","Date","Time","Duration","Location","MeetingLink","Required","Optional","CustomSubject","CustomBody"].forEach(k=>{});document.getElementById("dName").value=c.name;document.getElementById("dEmail").value=c.email;document.getElementById("dPhone").value=c.phone;document.getElementById("dCandidateNo").value=c.candidateNo;document.getElementById("dCity").value=c.city;document.getElementById("dRegion").value=c.region;document.getElementById("dJobNo").value=c.jobNo;document.getElementById("dPosition").value=c.position;document.getElementById("dDate").value=c.date;document.getElementById("dTime").value=c.time;document.getElementById("dMeetingType").value=c.meetingType;document.getElementById("dDuration").value=c.duration;document.getElementById("dLocation").value=c.location;document.getElementById("dMeetingLink").value=c.meetingLink;document.getElementById("dRequired").value=c.required;document.getElementById("dOptional").value=c.optional;populateDrawerTemplates();document.getElementById("dTemplate").value=c.templateCode;document.getElementById("dCustomSubject").value=c.customSubject;document.getElementById("dCustomBody").value=c.customBody;updatePreview();document.getElementById("drawer").classList.add("open");document.getElementById("backdrop").classList.add("open")}
+function closeDrawer(){document.getElementById("drawer").classList.remove("open");document.getElementById("backdrop").classList.remove("open");selectedIndex=null}
+function syncFromDrawer(revalidate=true){if(selectedIndex===null)return null;const c=candidates[selectedIndex];c.name=document.getElementById("dName").value.trim();const sp=splitName(c.name);c.firstName=sp.first;c.lastName=sp.last;c.email=document.getElementById("dEmail").value.trim();c.phone=document.getElementById("dPhone").value.trim();c.candidateNo=document.getElementById("dCandidateNo").value.trim();c.city=document.getElementById("dCity").value.trim();c.region=document.getElementById("dRegion").value.trim();c.jobNo=document.getElementById("dJobNo").value.trim();c.position=document.getElementById("dPosition").value.trim();c.date=document.getElementById("dDate").value;c.time=document.getElementById("dTime").value;c.meetingType=document.getElementById("dMeetingType").value;c.duration=Number(document.getElementById("dDuration").value||20);c.location=document.getElementById("dLocation").value.trim();c.meetingLink=document.getElementById("dMeetingLink").value.trim();c.required=document.getElementById("dRequired").value.trim();c.optional=document.getElementById("dOptional").value.trim();c.templateCode=document.getElementById("dTemplate").value;c.customSubject=document.getElementById("dCustomSubject").value.trim();c.customBody=document.getElementById("dCustomBody").value.trim();if(revalidate){c.errors=validate(c);if(c.errors.length)c.status="Hata";else if(c.status==="Hata")c.status="Hazır"}saveState();render();return c}
+function saveDrawer(show){const c=syncFromDrawer(true);updatePreview();if(show)toast(c.errors.length?`Kayıt güncellendi: ${c.errors.join(", ")}`:"Kayıt güncellendi.")}
+function updatePreview(){if(selectedIndex===null)return;const c=syncFromDrawer(false);const m=meetingData(c);document.getElementById("previewSubject").textContent=m.subject;document.getElementById("previewBody").innerHTML=nl2br(m.body);document.getElementById("previewMeeting").textContent=`${c.meetingType}\n${formatDate(c.date)} • ${c.time}\nSüre: ${c.duration} dk\n${c.meetingType==="Online"?`Link: ${c.meetingLink||"-"}`:`Konum: ${c.location||"-"}`}\nGerekli: ${(m.required||[]).join(", ")||"-"}\nOpsiyonel: ${(m.optional||[]).join(", ")||"-"}`}
+function resetCustomText(){document.getElementById("dCustomSubject").value="";document.getElementById("dCustomBody").value="";updatePreview();toast("Şablon metni yeniden aktif.")}
+function toggleRow(id,checked){if(checked)selectedIds.add(id);else selectedIds.delete(id);render()}function toggleSelectAll(checked){const q=document.getElementById("searchInput").value.toLocaleLowerCase("tr"),tf=document.getElementById("templateFilter").value,typ=document.getElementById("typeFilter").value;candidates.filter(c=>c.status!=="Hata"&&[c.name,c.email,c.phone,c.candidateNo,c.city,c.region,c.jobNo,c.position,c.templateCode,c.meetingType].join(" ").toLocaleLowerCase("tr").includes(q)&&(!tf||c.templateCode===tf)&&(!typ||c.meetingType===typ)).forEach(c=>checked?selectedIds.add(c.id):selectedIds.delete(c.id));render()}
+function selectValid(){selectedIds=new Set(candidates.filter(c=>c.status!=="Hata").map(c=>c.id));render();toast(`${selectedIds.size} geçerli kayıt seçildi.`)}
+function resetSelection(){if(!selectedIds.size)return toast("Önce kayıt seçin.");const n=selectedIds.size;selectedIds.clear();render();toast(`${n} seçimin kaldırıldı.`)}
+async function clipboardWrite(subject,body){const html=`<div style="font-family:BBVABentonSans,Segoe UI,Arial,sans-serif;font-size:14px;line-height:1.55">${nl2br(body)}</div>`;try{if(navigator.clipboard&&window.ClipboardItem){await navigator.clipboard.write([new ClipboardItem({"text/plain":new Blob([subject+"\n\n"+body],{type:"text/plain"}),"text/html":new Blob([html],{type:"text/html"})})]);return true}navigator.clipboard&&await navigator.clipboard.writeText(subject+"\n\n"+body);return true}catch(e){return false}}
+async function copyMessage(index){const c=candidates[index];if(c.status==="Hata")return;const m=meetingData(c);const ok=await clipboardWrite(m.subject,m.body);if(ok){c.status="Kopyalandı";saveState();render();toast(`${c.name} için konu + metin panoya kopyalandı.`)}else{openCandidate(index);toast("Panoya erişilemedi; metni önizlemeden kopyalayabilirsiniz.")}}
+async function copyCurrentMessage(){if(selectedIndex===null)return;const c=syncFromDrawer(true);if(c.errors.length){toast(`Eksik bilgi: ${c.errors.join(", ")}`);updatePreview();return}const m=meetingData(c);const ok=await clipboardWrite(m.subject,m.body);if(ok){c.status="Kopyalandı";saveState();render();updatePreview();toast("Konu + mesaj panoya kopyalandı. Outlook'a yapıştırabilirsiniz.")}else toast("Panoya erişim engellendi.")}
+async function copySelectedBundle(){const list=candidates.filter(c=>selectedIds.has(c.id)&&c.status!=="Hata");if(!list.length)return toast("Geçerli kayıt seçin.");let chunks=[];for(const c of list){const m=meetingData(c);chunks.push(`KONU\n${m.subject}\n\n${m.body}`);c.status="Kopyalandı"}const ok=await clipboardWrite("Seçilen mesajlar",chunks.join("\n\n==============================\n\n"));saveState();render();toast(ok?`${list.length} mesaj tek paket halinde panoya kopyalandı.`:"Panoya erişilemedi.")}
+function openOutlook(m){const p=new URLSearchParams({subject:m.subject,body:m.body,startdt:new Date(m.start).toISOString(),enddt:new Date(m.end).toISOString(),location:m.location,to:m.c.email,cc:m.optional.join(";")});window.open("https://outlook.office.com/calendar/0/deeplink/compose?"+p.toString(),"_blank","noopener,noreferrer")}
+function quickOutlook(index){const c=candidates[index];if(c.status==="Hata")return;const m=meetingData(c);openOutlook(m);c.status="Outlook Taslağı";saveState();render();toast(`${c.name} için Outlook taslağı açıldı. Gönderim manuel yapılır.`)}
+function openCurrentOutlook(){if(selectedIndex===null)return;const c=syncFromDrawer(true);if(c.errors.length){toast(`Eksik bilgi: ${c.errors.join(", ")}`);return}openOutlook(meetingData(c));c.status="Outlook Taslağı";saveState();render();updatePreview();toast("Outlook taslağı açıldı. Gönderim manuel yapılır.")}
+function icsEscape(v){return String(v||"").replace(/\\/g,"\\\\").replace(/\r?\n/g,"\\n").replace(/,/g,"\\,").replace(/;/g,"\\;")}
+function icsDate(v){return new Date(v).toISOString().replace(/[-:]/g,"").replace(/\.\d{3}Z$/,"Z")}
+function attendee(email,role){if(!email)return null;return `ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=${role};PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${email}`}
+function buildIcs(c){const m=meetingData(c);const at=[...m.required.map(e=>attendee(e,"REQ-PARTICIPANT")),...m.optional.map(e=>attendee(e,"OPT-PARTICIPANT"))].filter(Boolean);const desc=m.body+(c.meetingLink?`\n\nToplantı Linki: ${c.meetingLink}`:"");return ["BEGIN:VCALENDAR","VERSION:2.0","CALSCALE:GREGORIAN","PRODID:-//Yetenek Kazanimi Operasyon Merkezi//TR","METHOD:PUBLISH","BEGIN:VEVENT",`UID:${id()}@yetenekkazanimi`,`DTSTAMP:${icsDate(new Date().toISOString())}`,`DTSTART:${icsDate(m.start)}`,`DTEND:${icsDate(m.end)}`,`SUMMARY:${icsEscape(m.subject)}`,`DESCRIPTION:${icsEscape(desc)}`,`LOCATION:${icsEscape(m.location)}`,...at,"STATUS:TENTATIVE","TRANSP:OPAQUE","SEQUENCE:0","END:VEVENT","END:VCALENDAR"].join("\r\n")}
+function downloadBlob(name,content,type){const blob=new Blob([content],{type});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),300)}
+function downloadCurrentIcs(){if(selectedIndex===null)return;const c=syncFromDrawer(true);if(c.errors.length)return toast(`Eksik bilgi: ${c.errors.join(", ")}`);downloadBlob(`${slug(c.name)}_meeting.ics`,buildIcs(c),"text/calendar;charset=utf-8");toast(`${c.name} için ICS indirildi.`)}
+async function downloadSelectedIcs(){const list=candidates.filter(c=>selectedIds.has(c.id)&&c.status!=="Hata");if(!list.length)return toast("Geçerli kayıt seçin.");for(const c of list){downloadBlob(`${slug(c.name)}_meeting.ics`,buildIcs(c),"text/calendar;charset=utf-8");await new Promise(r=>setTimeout(r,180))}toast(`${list.length} ICS indirildi.`)}
+async function downloadSelectedZip(){const list=candidates.filter(c=>selectedIds.has(c.id)&&c.status!=="Hata");if(!list.length)return toast("Geçerli kayıt seçin.");if(typeof JSZip==="undefined")return toast("ZIP bileşeni yüklenemedi; tek tek ICS indirebilirsiniz.");const zip=new JSZip(), used=new Set();list.forEach((c,i)=>{let base=`${String(i+1).padStart(3,"0")}_${slug(c.name)}_meeting.ics`;let n=2;while(used.has(base))base=`${String(i+1).padStart(3,"0")}_${slug(c.name)}_meeting_${n++}.ics`;used.add(base);zip.file(base,buildIcs(c))});const blob=await zip.generateAsync({type:"blob",compression:"DEFLATE",compressionOptions:{level:6}});downloadBlob(`meeting_ics_${list.length}.zip`,blob,"application/zip");toast(`${list.length} ICS ZIP olarak hazırlandı.`)}
+function openNextSelected(){const next=candidates.find(c=>selectedIds.has(c.id)&&c.status!=="Hata"&&c.status!=="Outlook Taslağı");if(!next)return toast("Seçili ve açılmamış kayıt kalmadı.");const m=meetingData(next);openOutlook(m);next.status="Outlook Taslağı";saveState();render();toast(`${next.name} için Outlook taslağı açıldı. Bir sonraki için tekrar basın.`)}
+function exportCurrentExcel(){if(typeof XLSX==="undefined")return toast("Excel bileşeni yüklenemedi.");const rows=candidates.map(c=>({Şablon:c.templateCode,"Ad Soyad":c.name,"E-Posta":c.email,Telefon:c.phone,"Aday No":c.candidateNo,İkamet:c.city,Bölge:c.region,"İlan No":c.jobNo,Pozisyon:c.position,Tarih:c.date,Saat:c.time,"Toplantı Türü":c.meetingType,"Süre (dk)":c.duration,Konum:c.location,"Toplantı Linki":c.meetingLink,"Gerekli Katılımcılar":c.required,"Opsiyonel Katılımcılar":c.optional,"Özel Başlık":c.customSubject,"Özel Metin":c.customBody,Durum:c.status,Hatalar:(c.errors||[]).join("; ")}));const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Adaylar");XLSX.writeFile(wb,"meeting_operasyon_mevcut_liste.xlsx");toast("Mevcut liste Excel olarak dışa aktarıldı.")}
+function clearAll(){if(!candidates.length)return; if(!confirm("Tüm kayıtlar ve işlem durumları temizlensin mi?"))return;candidates=[];selectedIds.clear();saveState();render();toast("Liste temizlendi.")}
+function handleFile(file){if(typeof XLSX==="undefined")return toast("Excel bileşeni yüklenemedi. İnternet bağlantısını kontrol edin veya CSV kullanın.");const reader=new FileReader();reader.onload=e=>{try{const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array",cellDates:false});const sheet=wb.Sheets[wb.SheetNames[0]];const raw=XLSX.utils.sheet_to_json(sheet,{defval:""}).slice(0,MAX_ROWS);candidates=raw.map(candidateFromRow);selectedIds.clear();saveState();populateTemplateFilters();render();toast(`${raw.length} kayıt yüklendi. ${candidates.filter(c=>c.status==="Hata").length} kayıtta eksik veri var.`)}catch(err){toast("Excel okunamadı: "+err.message)}};reader.readAsArrayBuffer(file)}
+document.getElementById("fileInput").addEventListener("change",e=>{const f=e.target.files[0];if(f)handleFile(f)});document.getElementById("searchInput").addEventListener("input",render);document.getElementById("templateFilter").addEventListener("change",render);document.getElementById("typeFilter").addEventListener("change",render);
+["dName","dEmail","dPhone","dCandidateNo","dCity","dRegion","dJobNo","dPosition","dDate","dTime","dMeetingType","dDuration","dLocation","dMeetingLink","dRequired","dOptional","dCustomSubject","dCustomBody"].forEach(id0=>document.getElementById(id0).addEventListener("input",()=>{if(selectedIndex!==null){syncFromDrawer(false);updatePreview()}}));document.getElementById("dTemplate").addEventListener("change",()=>{if(selectedIndex!==null){syncFromDrawer(false);updatePreview()}});document.getElementById("dMeetingType").addEventListener("change",()=>{if(selectedIndex!==null){syncFromDrawer(false);updatePreview()}});
+function openTemplateManager(){renderTemplateManager();document.getElementById("managerBackdrop").classList.add("open");document.getElementById("manager").classList.add("open")}
+function closeTemplateManager(){document.getElementById("managerBackdrop").classList.remove("open");document.getElementById("manager").classList.remove("open");cancelTemplateEdit()}
+function renderTemplateManager(){document.getElementById("templateList").innerHTML=templates.map((t,i)=>`<div class="template-card"><div class="title">${esc(t.name)}</div><div class="meta">${esc(t.code)} • ${esc(t.type)} • ${esc(t.usage)}</div><div class="sample"><strong>Konu:</strong> ${esc(t.subject)}\n\n${esc(t.body)}</div><div class="template-actions"><button class="btn-secondary btn-sm" onclick="editTemplate(${i})">Düzenle</button><button class="btn-danger btn-sm" onclick="deleteTemplate(${i})">Sil</button></div></div>`).join("")}
+function newTemplate(){editingTemplateIndex=null;document.getElementById("tCode").value="";document.getElementById("tName").value="Yeni Şablon";document.getElementById("tType").value="Online";document.getElementById("tUsage").value="";document.getElementById("tSubject").value="{{AD_SOYAD}} - {{POZISYON}}";document.getElementById("tBody").value="Merhaba {{AD}},\n\n{{POZISYON}} pozisyonu ile ilgili görüşme bilgileriniz aşağıdadır.\n\nTarih: {{TARIH}}\nSaat: {{SAAT}}\n\nİyi görüşmeler dileriz\n\nYetenek Kazanımı Operasyonları\nGaranti BBVA";document.getElementById("managerEditor").classList.add("open")}
+function editTemplate(i){editingTemplateIndex=i;const t=templates[i];["Code","Name","Usage","Subject","Body"].forEach(k=>{});document.getElementById("tCode").value=t.code;document.getElementById("tName").value=t.name;document.getElementById("tType").value=t.type;document.getElementById("tUsage").value=t.usage;document.getElementById("tSubject").value=t.subject;document.getElementById("tBody").value=t.body;document.getElementById("managerEditor").classList.add("open")}
+function cancelTemplateEdit(){document.getElementById("managerEditor").classList.remove("open");editingTemplateIndex=null}
+function saveTemplate(){const code=document.getElementById("tCode").value.trim();const name=document.getElementById("tName").value.trim();if(!code||!name)return toast("Kod ve şablon adı zorunlu.");const obj={code,name,type:document.getElementById("tType").value,usage:document.getElementById("tUsage").value.trim(),subject:document.getElementById("tSubject").value,body:document.getElementById("tBody").value};const dup=templates.findIndex((t,i)=>t.code===code&&i!==editingTemplateIndex);if(dup>=0)return toast("Bu şablon kodu zaten kullanılıyor.");if(editingTemplateIndex===null)templates.push(obj);else templates[editingTemplateIndex]=obj;saveTemplates();renderTemplateManager();cancelTemplateEdit();render();toast("Şablon kaydedildi.")}
+function deleteTemplate(i){if(templates.length<=1)return toast("En az bir şablon kalmalı.");if(!confirm(`“${templates[i].name}” silinsin mi?`))return;const code=templates[i].code;templates.splice(i,1);candidates.forEach(c=>{if(c.templateCode===code)c.templateCode=c.meetingType==="Fiziki"?"FIZIKI_STANDART":"ONLINE_IZMIR"});saveTemplates();saveState();renderTemplateManager();render();toast("Şablon silindi.")}
+function downloadTemplate(){if(typeof XLSX==="undefined")return toast("Excel bileşeni yüklenemedi.");const wsData=[
+ ["Şablon","Ad Soyad","E-Posta","Telefon","Aday No","İkamet","Bölge","İlan No","Pozisyon","Tarih","Saat","Toplantı Türü","Süre (dk)","Konum","Toplantı Linki","Gerekli Katılımcılar","Opsiyonel Katılımcılar","Özel Başlık","Özel Metin"],
+ ["ONLINE_IZMIR","Ayşe Yılmaz","ayse.yilmaz@example.com","0555 111 22 33","AD-001","İzmir","Ege","ILN-2026-01","Ödeme Sistemleri Saha Satış Asistanı","05.10.2026","10:00","Online",20,"Microsoft Teams Meeting","https://teams.microsoft.com/...","","","",""]
+];const ws=XLSX.utils.aoa_to_sheet(wsData);ws["!cols"]=wsData[0].map((h,i)=>({wch:[18,24,30,18,14,16,16,16,38,13,11,14,11,30,44,32,34,38,55][i]}));const wbf=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wbf,ws,"Adaylar");const wt=XLSX.utils.json_to_sheet(templates.map(t=>({"Şablon Kodu":t.code,"Şablon Adı":t.name,"Toplantı Türü":t.type,"Kullanım":t.usage,"Başlık Şablonu":t.subject,"Metin Şablonu":t.body})));wt["!cols"]=[{wch:20},{wch:32},{wch:15},{wch:44},{wch:65},{wch:95}];XLSX.utils.book_append_sheet(wbf,wt,"Şablonlar");const wg=XLSX.utils.aoa_to_sheet([["Kullanım Notu"],["Her satır bir aday / bir görüşmedir."],["Şablon sütunu hangi iletişim metninin kullanılacağını belirler."],["Özel Başlık veya Özel Metin doluysa ilgili alanda şablonun yerine bu içerik kullanılır."],["Aynı Excel içinde Online ve Fiziki; farklı ilan ve farklı şablon kodları kullanılabilir."],["Katılımcıları noktalı virgül ile ayırabilirsiniz: mail1@firma.com; mail2@firma.com"]]);wg["!cols"]=[{wch:110}];XLSX.utils.book_append_sheet(wbf,wg,"Kullanım");XLSX.writeFile(wbf,"Toplu_Meeting_Operasyon_Sablonu_v2.xlsx");toast("Güncel Excel şablonu indirildi.")}
+populateTemplateFilters();populateDrawerTemplates();render();
+</script>
+</body>
+</html>
